@@ -76,6 +76,7 @@ export function AnalyzerApp() {
         return {
           ...prev,
           axeViolations: violations,
+          previewDomChecked: true,
         };
       }
     });

@@ -70,6 +70,7 @@ export function analyzeComponent(
   const id = `analysis-${Date.now()}`;
   const analyzedAt = new Date().toISOString();
   const trimmed = sourceCode.trim();
+  const previewDomChecked = options?.axeViolations !== undefined;
   const axeViolations = options?.axeViolations ?? [];
 
   if (!trimmed) {
@@ -94,6 +95,7 @@ export function analyzeComponent(
       ],
       a11yTree: [],
       axeViolations: [],
+      previewDomChecked: false,
       suggestedFixes: [],
       summary: {
         score: 0,
@@ -152,6 +154,7 @@ export function analyzeComponent(
     issues,
     a11yTree,
     axeViolations,
+    previewDomChecked,
     suggestedFixes,
     summary: buildSummary(issues, stateCoverage, detectedComponents),
     parseErrors,

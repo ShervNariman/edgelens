@@ -120,6 +120,8 @@ export interface AnalysisReport {
   issues: AnalysisIssue[];
   a11yTree: A11yNode[];
   axeViolations: AxeViolation[];
+  /** True once axe-core has run on the simulated preview (even if zero violations). */
+  previewDomChecked: boolean;
   suggestedFixes: SuggestedFix[];
   summary: AnalysisSummary;
   parseErrors: string[];

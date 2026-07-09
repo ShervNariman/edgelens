@@ -155,6 +155,7 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
     stateCoverage,
     a11yTree,
     axeViolations = [],
+    previewDomChecked = false,
     suggestedFixes,
     detectedComponents,
     componentName,
@@ -170,6 +171,7 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
     (i) => i.category === "accessibility" && i.source === "preview"
   );
   const a11yCount = staticA11yIssues.length + previewA11yIssues.length;
+  const previewChecked = previewDomChecked || previewA11yIssues.length > 0;
 
   return (
     <div className="flex flex-col gap-5">
@@ -190,7 +192,7 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
       </div>
       <p className="text-[11px] leading-relaxed text-muted-foreground">
         Score is heuristic, based on missing states and detected accessibility
-        risks — not a WCAG certification.
+        risks.
       </p>
 
       <div className="rounded-xl border border-border/70 bg-card/50 px-4 py-3">
@@ -226,18 +228,26 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
           </li>
           <li className="flex gap-2">
             <span className="text-emerald-500">✓</span>
-            Detected {componentName ?? "component"} as{" "}
-            <span className="font-mono text-foreground/80">{primaryType}</span>
+            Detected component type:{" "}
+            <span className="font-mono text-foreground/80">
+              {componentName ? `${componentName} · ${primaryType}` : primaryType}
+            </span>
           </li>
           <li className="flex gap-2">
             <span className="text-emerald-500">✓</span>
-            Checked common interaction states
+            Checked common states
           </li>
           <li className="flex gap-2">
-            <span className="text-emerald-500">✓</span>
-            {axeViolations.length > 0 || previewA11yIssues.length > 0
-              ? "Ran preview DOM checks (axe-core)"
-              : "Preview DOM checks available after Analyze"}
+            <span
+              className={
+                previewChecked ? "text-emerald-500" : "text-muted-foreground/60"
+              }
+            >
+              {previewChecked ? "✓" : "·"}
+            </span>
+            {previewChecked
+              ? "Ran preview DOM checks where available"
+              : "Preview DOM checks pending (after Analyze)"}
           </li>
         </ul>
       </div>
@@ -365,17 +375,23 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
 
         <TabsContent value="accessibility" className="mt-4 space-y-5">
           <p className="text-xs leading-relaxed text-muted-foreground">
-            EdgeLens combines static JSX heuristics with preview DOM checks. It
-            does not execute arbitrary user code.
+            Static code checks scan pasted JSX. Preview DOM checks run axe-core
+            on the simulated preview — not a WCAG certification.
           </p>
 
           <section className="space-y-2.5">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                Static code findings
+                Static code checks
               </p>
               <Badge variant="outline" className="font-mono text-[10px]">
-                Static code check
+                Static
+              </Badge>
+              <Badge
+                variant="outline"
+                className="border-emerald-500/30 bg-emerald-500/10 font-mono text-[10px] text-emerald-900 dark:text-emerald-200"
+              >
+                A11y rule
               </Badge>
             </div>
             {staticA11yIssues.length === 0 ? (
@@ -400,16 +416,19 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
                 variant="outline"
                 className="border-violet-500/30 bg-violet-500/10 font-mono text-[10px] text-violet-900 dark:text-violet-200"
               >
-                Preview DOM check
+                Preview
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              axe-core runs on the simulated preview — not your raw pasted JSX.
+              axe-core on the simulated preview DOM — not your raw pasted JSX.
             </p>
-            {previewA11yIssues.length === 0 && axeViolations.length === 0 ? (
+            {!previewChecked ? (
               <p className="text-sm text-muted-foreground">
-                No preview DOM violations yet. Analyze to run axe-core on the
-                live preview.
+                Preview DOM checks run automatically after Analyze.
+              </p>
+            ) : previewA11yIssues.length === 0 && axeViolations.length === 0 ? (
+              <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                No preview DOM violations detected.
               </p>
             ) : previewA11yIssues.length > 0 ? (
               previewA11yIssues.map((issue) => (
