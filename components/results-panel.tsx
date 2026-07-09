@@ -1,0 +1,714 @@
+"use client";
+
+import type {
+  AnalysisIssue,
+  AnalysisReport,
+  IssueSeverity,
+  IssueSource,
+  SuggestedFix,
+} from "@/types/analysis";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import {
+  AlertTriangle,
+  Check,
+  Copy,
+  Info,
+  ShieldAlert,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+
+interface ResultsPanelProps {
+  report: AnalysisReport | null;
+  isAnalyzing: boolean;
+}
+
+function severityIcon(severity: IssueSeverity) {
+  if (severity === "critical") return <ShieldAlert className="h-3.5 w-3.5" />;
+  if (severity === "warning") return <AlertTriangle className="h-3.5 w-3.5" />;
+  return <Info className="h-3.5 w-3.5" />;
+}
+
+function severityClass(severity: IssueSeverity) {
+  if (severity === "critical") {
+    return "border-destructive/35 bg-destructive/8";
+  }
+  if (severity === "warning") {
+    return "border-amber-500/30 bg-amber-500/8";
+  }
+  return "border-border bg-muted/30";
+}
+
+function severityLabel(severity: IssueSeverity): "High" | "Medium" | "Low" {
+  if (severity === "critical") return "High";
+  if (severity === "warning") return "Medium";
+  return "Low";
+}
+
+function sourceLabel(source: IssueSource): string {
+  switch (source) {
+    case "preview":
+      return "Preview";
+    case "state-rule":
+      return "State rule";
+    case "a11y-rule":
+      return "A11y rule";
+    default:
+      return "Static";
+  }
+}
+
+function sourceBadgeClass(source: IssueSource): string {
+  switch (source) {
+    case "preview":
+      return "border-violet-500/30 bg-violet-500/10 text-violet-900 dark:text-violet-200";
+    case "state-rule":
+      return "border-sky-500/30 bg-sky-500/10 text-sky-900 dark:text-sky-200";
+    case "a11y-rule":
+      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200";
+    default:
+      return "border-border bg-muted/40 text-muted-foreground";
+  }
+}
+
+function scoreColor(score: number) {
+  if (score >= 80) return "text-emerald-600 dark:text-emerald-400";
+  if (score >= 50) return "text-amber-600 dark:text-amber-300";
+  return "text-destructive";
+}
+
+function buildFindingsSummary(report: AnalysisReport): string {
+  const { summary, stateCoverage, issues } = report;
+  const missingRequired = stateCoverage.filter((s) => s.required && !s.present);
+  const a11yCount = issues.filter((i) => i.category === "accessibility").length;
+
+  if (summary.totalIssues === 0) {
+    return "No issues flagged — states and basic accessibility look solid.";
+  }
+
+  const parts: string[] = [];
+  if (missingRequired.length > 0) {
+    parts.push(
+      `${missingRequired.length} interaction state${missingRequired.length === 1 ? "" : "s"} not implemented (${missingRequired
+        .map((s) => s.state)
+        .slice(0, 3)
+        .join(", ")}${missingRequired.length > 3 ? "…" : ""})`
+    );
+  }
+  if (a11yCount > 0) {
+    parts.push(
+      `${a11yCount} accessibility finding${a11yCount === 1 ? "" : "s"}`
+    );
+  }
+  const other = summary.totalIssues - missingRequired.length - a11yCount;
+  if (other > 0) {
+    parts.push(`${other} pattern/interaction note${other === 1 ? "" : "s"}`);
+  }
+
+  return parts.join(" · ") || `${summary.totalIssues} findings to review`;
+}
+
+export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
+  const findingsSummary = useMemo(
+    () => (report ? buildFindingsSummary(report) : ""),
+    [report]
+  );
+  const issueById = useMemo(() => {
+    const map = new Map<string, AnalysisIssue>();
+    if (!report) return map;
+    for (const issue of report.issues) map.set(issue.id, issue);
+    return map;
+  }, [report]);
+
+  if (isAnalyzing) {
+    return (
+      <EmptyShell>
+        <div className="flex flex-col items-center gap-3 py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-400 border-t-transparent" />
+          <p className="font-mono text-sm text-muted-foreground">
+            scanning states + a11y…
+          </p>
+        </div>
+      </EmptyShell>
+    );
+  }
+
+  if (!report) {
+    return (
+      <EmptyShell>
+        <div className="flex flex-col items-center gap-2 py-12 text-center">
+          <p className="text-sm font-medium text-foreground">No analysis yet</p>
+          <p className="max-w-sm text-xs text-muted-foreground">
+            Load an example or paste a component, then click Analyze.
+          </p>
+        </div>
+      </EmptyShell>
+    );
+  }
+
+  const {
+    summary,
+    issues,
+    stateCoverage,
+    a11yTree,
+    axeViolations = [],
+    suggestedFixes,
+    detectedComponents,
+    componentName,
+    primaryType,
+    parseErrors,
+  } = report;
+
+  const missingRequired = stateCoverage.filter((s) => s.required && !s.present);
+  const staticA11yIssues = issues.filter(
+    (i) => i.category === "accessibility" && i.source !== "preview"
+  );
+  const previewA11yIssues = issues.filter(
+    (i) => i.category === "accessibility" && i.source === "preview"
+  );
+  const a11yCount = staticA11yIssues.length + previewA11yIssues.length;
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+        <Stat
+          label="Score"
+          value={`${summary.score}`}
+          valueClass={scoreColor(summary.score)}
+          hint="/ 100"
+        />
+        <Stat label="Issues" value={`${summary.totalIssues}`} />
+        <Stat
+          label="States"
+          value={`${summary.statesCovered}`}
+          hint={`/ ${summary.statesTotal}`}
+        />
+        <Stat label="Components" value={`${summary.componentsDetected}`} />
+      </div>
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
+        Score is heuristic, based on missing states and detected accessibility
+        risks — not a WCAG certification.
+      </p>
+
+      <div className="rounded-xl border border-border/70 bg-card/50 px-4 py-3">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          What EdgeLens found
+        </p>
+        <p className="mt-1.5 text-sm leading-relaxed text-foreground">
+          {findingsSummary}
+        </p>
+        {missingRequired.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {missingRequired.map((s) => (
+              <Badge
+                key={s.state}
+                variant="outline"
+                className="border-sky-500/30 bg-sky-500/10 font-mono text-[10px] text-sky-900 dark:text-sky-100"
+              >
+                {s.state}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          How EdgeLens analyzed this
+        </p>
+        <ul className="mt-2 grid gap-1.5 text-xs text-muted-foreground sm:grid-cols-2">
+          <li className="flex gap-2">
+            <span className="text-emerald-500">✓</span>
+            Parsed JSX{parseErrors.length > 0 ? " (with recovery notes)" : ""}
+          </li>
+          <li className="flex gap-2">
+            <span className="text-emerald-500">✓</span>
+            Detected {componentName ?? "component"} as{" "}
+            <span className="font-mono text-foreground/80">{primaryType}</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-emerald-500">✓</span>
+            Checked common interaction states
+          </li>
+          <li className="flex gap-2">
+            <span className="text-emerald-500">✓</span>
+            {axeViolations.length > 0 || previewA11yIssues.length > 0
+              ? "Ran preview DOM checks (axe-core)"
+              : "Preview DOM checks available after Analyze"}
+          </li>
+        </ul>
+      </div>
+
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm">
+            Overview
+            {issues.length > 0 && (
+              <span className="ml-1.5 font-mono text-[10px] opacity-70">
+                {issues.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="states" className="text-xs sm:text-sm">
+            States
+          </TabsTrigger>
+          <TabsTrigger value="accessibility" className="text-xs sm:text-sm">
+            A11y
+            {a11yCount > 0 && (
+              <span className="ml-1.5 font-mono text-[10px] opacity-70">
+                {a11yCount}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="fixes" className="text-xs sm:text-sm">
+            Fixes
+            {suggestedFixes.length > 0 && (
+              <span className="ml-1.5 font-mono text-[10px] opacity-70">
+                {suggestedFixes.length}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-4 space-y-4">
+          <div className="flex flex-wrap gap-1.5">
+            {detectedComponents.length === 0 ? (
+              <Badge variant="outline">No shadcn primitives detected</Badge>
+            ) : (
+              detectedComponents.map((c) => (
+                <Badge
+                  key={`${c.type}-${c.name}`}
+                  variant="secondary"
+                  className="font-mono text-[11px]"
+                >
+                  {c.name}
+                </Badge>
+              ))
+            )}
+          </div>
+
+          <div className="space-y-2.5">
+            {issues.length === 0 ? (
+              <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                No issues found — nice work.
+              </p>
+            ) : (
+              issues.map((issue) => <IssueCard key={issue.id} issue={issue} />)
+            )}
+          </div>
+
+          {parseErrors.length > 0 && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                Parse notes
+              </p>
+              <div className="mt-2 space-y-1 font-mono text-xs text-muted-foreground">
+                {parseErrors.map((e) => (
+                  <p key={e}>{e}</p>
+                ))}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="states" className="mt-4 space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Green = detected in source · Sky = not implemented · Gray = optional
+          </p>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            {stateCoverage.map((s) => (
+              <div
+                key={s.state}
+                className={cn(
+                  "rounded-xl border px-4 py-3.5 transition-colors",
+                  s.present
+                    ? "border-emerald-500/30 bg-emerald-500/5"
+                    : s.required
+                      ? "border-sky-500/30 bg-sky-500/8"
+                      : "border-border bg-muted/20"
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-sm font-medium">{s.state}</span>
+                  <Badge
+                    variant={s.present ? "secondary" : "outline"}
+                    className={cn(
+                      "text-[10px]",
+                      !s.present &&
+                        s.required &&
+                        "border-sky-500/30 text-sky-800 dark:text-sky-200"
+                    )}
+                  >
+                    {s.present
+                      ? "in source"
+                      : s.required
+                        ? "not implemented"
+                        : "optional"}
+                  </Badge>
+                </div>
+                {s.evidence ? (
+                  <p className="mt-2 truncate font-mono text-[10px] text-muted-foreground">
+                    matched: {s.evidence}
+                  </p>
+                ) : !s.present ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    No evidence found in the pasted source.
+                  </p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="accessibility" className="mt-4 space-y-5">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            EdgeLens combines static JSX heuristics with preview DOM checks. It
+            does not execute arbitrary user code.
+          </p>
+
+          <section className="space-y-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Static code findings
+              </p>
+              <Badge variant="outline" className="font-mono text-[10px]">
+                Static code check
+              </Badge>
+            </div>
+            {staticA11yIssues.length === 0 ? (
+              <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                No static accessibility issues flagged.
+              </p>
+            ) : (
+              staticA11yIssues.map((issue) => (
+                <IssueCard key={issue.id} issue={issue} />
+              ))
+            )}
+          </section>
+
+          <Separator />
+
+          <section className="space-y-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Preview DOM checks
+              </p>
+              <Badge
+                variant="outline"
+                className="border-violet-500/30 bg-violet-500/10 font-mono text-[10px] text-violet-900 dark:text-violet-200"
+              >
+                Preview DOM check
+              </Badge>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              axe-core runs on the simulated preview — not your raw pasted JSX.
+            </p>
+            {previewA11yIssues.length === 0 && axeViolations.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No preview DOM violations yet. Analyze to run axe-core on the
+                live preview.
+              </p>
+            ) : previewA11yIssues.length > 0 ? (
+              previewA11yIssues.map((issue) => (
+                <IssueCard key={issue.id} issue={issue} />
+              ))
+            ) : (
+              axeViolations.map((v) => (
+                <div
+                  key={v.id}
+                  className="rounded-xl border border-violet-500/25 bg-violet-500/5 px-4 py-3"
+                >
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="text-sm font-medium">{v.help}</p>
+                    <Badge
+                      variant="outline"
+                      className="border-violet-500/30 bg-violet-500/10 font-mono text-[10px] text-violet-900 dark:text-violet-200"
+                    >
+                      Preview
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {v.description}
+                  </p>
+                  <p className="mt-2 font-mono text-[10px] text-muted-foreground">
+                    {v.id} · impact={v.impact ?? "n/a"} · nodes={v.nodes}
+                  </p>
+                </div>
+              ))
+            )}
+          </section>
+
+          <Separator />
+
+          <div>
+            <p className="mb-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Approximate a11y tree
+            </p>
+            <ul className="space-y-2 font-mono text-xs">
+              {a11yTree.map((node, idx) => (
+                <li
+                  key={`${node.role}-${idx}`}
+                  className={cn(
+                    "rounded-xl border px-4 py-3",
+                    node.issues.length
+                      ? "border-destructive/35 bg-destructive/5"
+                      : "border-border bg-card/40"
+                  )}
+                >
+                  <span className="text-emerald-600 dark:text-emerald-400">
+                    {node.role}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    &quot;{node.name}&quot;
+                  </span>
+                  {node.tag && (
+                    <span className="text-muted-foreground"> · {node.tag}</span>
+                  )}
+                  {node.issues.length > 0 && (
+                    <ul className="mt-2 space-y-1 text-destructive">
+                      {node.issues.map((i) => (
+                        <li key={i}>↳ {i}</li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="fixes" className="mt-4 space-y-4">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Fixes are deterministic templates based on detected patterns. Review
+            before applying.
+          </p>
+          {suggestedFixes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No suggested fixes for this run.
+            </p>
+          ) : (
+            suggestedFixes.map((fix) => (
+              <FixCard
+                key={fix.id}
+                fix={fix}
+                issue={issueById.get(fix.issueId)}
+              />
+            ))
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function IssueCard({ issue }: { issue: AnalysisIssue }) {
+  return (
+    <article
+      className={cn(
+        "rounded-xl border px-4 py-3 transition-colors",
+        severityClass(issue.severity)
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 text-foreground/80">
+          {severityIcon(issue.severity)}
+        </span>
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h3 className="text-sm font-medium text-foreground">{issue.title}</h3>
+            <Badge variant="outline" className="font-mono text-[10px]">
+              {severityLabel(issue.severity)}
+            </Badge>
+            <Badge
+              variant="outline"
+              className={cn("font-mono text-[10px]", sourceBadgeClass(issue.source))}
+            >
+              {sourceLabel(issue.source)}
+            </Badge>
+          </div>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {issue.description}
+          </p>
+          <p className="text-xs text-foreground/80">
+            <span className="text-muted-foreground">Suggestion: </span>
+            {issue.suggestion}
+          </p>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  valueClass,
+  hint,
+}: {
+  label: string;
+  value: string;
+  valueClass?: string;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border/70 bg-card/50 px-3.5 py-3">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-1 font-mono text-2xl font-semibold tracking-tight",
+          valueClass
+        )}
+      >
+        {value}
+        {hint && (
+          <span className="ml-1 text-sm font-normal text-muted-foreground">
+            {hint}
+          </span>
+        )}
+      </p>
+    </div>
+  );
+}
+
+function EmptyShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-border/70 bg-card/20">
+      {children}
+    </div>
+  );
+}
+
+function FixCard({
+  fix,
+  issue,
+}: {
+  fix: SuggestedFix;
+  issue?: AnalysisIssue;
+}) {
+  const [copied, setCopied] = useState<"after" | "before" | null>(null);
+
+  const problem = fix.problem || issue?.title || fix.title;
+  const why =
+    fix.whyItMatters ||
+    issue?.description ||
+    "Improves interaction clarity and accessibility.";
+  const suggestion =
+    fix.suggestion || fix.description || issue?.suggestion || "";
+
+  const copy = async (text: string, which: "after" | "before") => {
+    await navigator.clipboard.writeText(text);
+    setCopied(which);
+    window.setTimeout(() => setCopied(null), 1500);
+  };
+
+  return (
+    <article className="overflow-hidden rounded-xl border border-border/80 bg-card/40">
+      <div className="space-y-3 border-b border-border/60 px-4 py-4">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <h3 className="text-sm font-semibold text-foreground">{fix.title}</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {issue && (
+              <>
+                <Badge variant="outline" className="font-mono text-[10px]">
+                  {severityLabel(issue.severity)}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "font-mono text-[10px]",
+                    sourceBadgeClass(issue.source)
+                  )}
+                >
+                  {sourceLabel(issue.source)}
+                </Badge>
+              </>
+            )}
+          </div>
+        </div>
+
+        <dl className="space-y-2.5 text-sm">
+          <div>
+            <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Problem
+            </dt>
+            <dd className="mt-0.5 text-foreground/90">{problem}</dd>
+          </div>
+          <div>
+            <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Why it matters
+            </dt>
+            <dd className="mt-0.5 leading-relaxed text-muted-foreground">{why}</dd>
+          </div>
+          <div>
+            <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Suggested fix
+            </dt>
+            <dd className="mt-0.5 leading-relaxed text-foreground/90">
+              {suggestion}
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="grid gap-0 md:grid-cols-2">
+        {fix.before && (
+          <div className="border-b border-border/60 md:border-r md:border-b-0">
+            <div className="flex items-center justify-between gap-2 px-4 py-2.5">
+              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Before
+              </span>
+              <Button
+                type="button"
+                size="xs"
+                variant="ghost"
+                className="gap-1.5"
+                onClick={() => copy(fix.before!, "before")}
+              >
+                {copied === "before" ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+                {copied === "before" ? "Copied" : "Copy"}
+              </Button>
+            </div>
+            <pre className="overflow-x-auto bg-muted/30 px-4 pb-4 font-mono text-[11px] leading-relaxed text-muted-foreground">
+              <code>{fix.before}</code>
+            </pre>
+          </div>
+        )}
+
+        <div className={cn(!fix.before && "md:col-span-2")}>
+          <div className="flex items-center justify-between gap-2 px-4 py-2.5">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+              {fix.before ? "After" : "Suggested code"}
+            </span>
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => copy(fix.after, "after")}
+            >
+              {copied === "after" ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+              {copied === "after" ? "Copied" : "Copy"}
+            </Button>
+          </div>
+          <pre className="overflow-x-auto bg-emerald-500/5 px-4 pb-4 font-mono text-[11px] leading-relaxed text-foreground/85">
+            <code>{fix.after}</code>
+          </pre>
+        </div>
+      </div>
+    </article>
+  );
+}
