@@ -346,7 +346,7 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
           )}
 
           <p className="text-xs text-muted-foreground">
-            Green = detected in source · Sky = not implemented · Gray = optional
+            Green = detected in source · Blue = not implemented · Gray = optional
           </p>
           <div className="grid gap-2.5 sm:grid-cols-2">
             {stateCoverage.map((s) => (
