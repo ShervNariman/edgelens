@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CHECK_LAYERS, LIMITATION_COPY } from "@/lib/product-copy";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
@@ -83,29 +84,37 @@ function scoreColor(score: number) {
 function buildFindingsSummary(report: AnalysisReport): string {
   const { summary, stateCoverage, issues } = report;
   const missingRequired = stateCoverage.filter((s) => s.required && !s.present);
-  const a11yCount = issues.filter((i) => i.category === "accessibility").length;
+  const staticCount = issues.filter(
+    (i) =>
+      i.source !== "preview" &&
+      (i.category === "accessibility" ||
+        i.category === "pattern" ||
+        i.category === "interaction")
+  ).length;
+  const previewCount = issues.filter((i) => i.source === "preview").length;
 
   if (summary.totalIssues === 0) {
-    return "No issues flagged — states and basic accessibility look solid.";
+    return "No issues flagged — state coverage and supporting checks look solid for this pass.";
   }
 
   const parts: string[] = [];
   if (missingRequired.length > 0) {
     parts.push(
-      `${missingRequired.length} interaction state${missingRequired.length === 1 ? "" : "s"} not implemented (${missingRequired
+      `${missingRequired.length} state gap${missingRequired.length === 1 ? "" : "s"} (${missingRequired
         .map((s) => s.state)
         .slice(0, 3)
         .join(", ")}${missingRequired.length > 3 ? "…" : ""})`
     );
   }
-  if (a11yCount > 0) {
+  if (staticCount > 0) {
     parts.push(
-      `${a11yCount} accessibility finding${a11yCount === 1 ? "" : "s"}`
+      `${staticCount} static JSX/shadcn finding${staticCount === 1 ? "" : "s"}`
     );
   }
-  const other = summary.totalIssues - missingRequired.length - a11yCount;
-  if (other > 0) {
-    parts.push(`${other} pattern/interaction note${other === 1 ? "" : "s"}`);
+  if (previewCount > 0) {
+    parts.push(
+      `${previewCount} preview DOM finding${previewCount === 1 ? "" : "s"}`
+    );
   }
 
   return parts.join(" · ") || `${summary.totalIssues} findings to review`;
@@ -129,7 +138,7 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
         <div className="flex flex-col items-center gap-3 py-12">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-400 border-t-transparent" />
           <p className="font-mono text-sm text-muted-foreground">
-            scanning states + a11y…
+            checking state completeness…
           </p>
         </div>
       </EmptyShell>
@@ -142,7 +151,8 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
         <div className="flex flex-col items-center gap-2 py-12 text-center">
           <p className="text-sm font-medium text-foreground">No analysis yet</p>
           <p className="max-w-sm text-xs text-muted-foreground">
-            Load an example or paste a component, then click Analyze.
+            Load an example or paste a component, then click Analyze. State
+            completeness is the primary check.
           </p>
         </div>
       </EmptyShell>
@@ -164,14 +174,17 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
   } = report;
 
   const missingRequired = stateCoverage.filter((s) => s.required && !s.present);
-  const staticA11yIssues = issues.filter(
-    (i) => i.category === "accessibility" && i.source !== "preview"
+  const stateIssues = issues.filter(
+    (i) => i.category === "missing-state" || i.source === "state-rule"
   );
-  const previewA11yIssues = issues.filter(
-    (i) => i.category === "accessibility" && i.source === "preview"
+  const staticIssues = issues.filter(
+    (i) =>
+      i.source !== "preview" &&
+      i.category !== "missing-state" &&
+      i.source !== "state-rule"
   );
-  const a11yCount = staticA11yIssues.length + previewA11yIssues.length;
-  const previewChecked = previewDomChecked || previewA11yIssues.length > 0;
+  const previewIssues = issues.filter((i) => i.source === "preview");
+  const previewChecked = previewDomChecked || previewIssues.length > 0;
 
   return (
     <div className="flex flex-col gap-5">
@@ -182,22 +195,22 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
           valueClass={scoreColor(summary.score)}
           hint="/ 100"
         />
-        <Stat label="Issues" value={`${summary.totalIssues}`} />
         <Stat
           label="States"
           value={`${summary.statesCovered}`}
           hint={`/ ${summary.statesTotal}`}
         />
+        <Stat label="Issues" value={`${summary.totalIssues}`} />
         <Stat label="Components" value={`${summary.componentsDetected}`} />
       </div>
       <p className="text-[11px] leading-relaxed text-muted-foreground">
-        Score is heuristic, based on missing states and detected accessibility
-        risks.
+        Score is heuristic — weighted toward state completeness, with supporting
+        static and preview risk signals. Not a WCAG score.
       </p>
 
-      <div className="rounded-xl border border-border/70 bg-card/50 px-4 py-3">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-          What EdgeLens found
+      <div className="rounded-xl border border-sky-500/25 bg-sky-500/5 px-4 py-3">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-sky-800 dark:text-sky-200">
+          State completeness · hero check
         </p>
         <p className="mt-1.5 text-sm leading-relaxed text-foreground">
           {findingsSummary}
@@ -219,23 +232,27 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
 
       <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
         <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-          How EdgeLens analyzed this
+          Check layers
         </p>
         <ul className="mt-2 grid gap-1.5 text-xs text-muted-foreground sm:grid-cols-2">
           <li className="flex gap-2">
-            <span className="text-emerald-500">✓</span>
-            Parsed JSX{parseErrors.length > 0 ? " (with recovery notes)" : ""}
-          </li>
-          <li className="flex gap-2">
-            <span className="text-emerald-500">✓</span>
-            Detected component type:{" "}
-            <span className="font-mono text-foreground/80">
-              {componentName ? `${componentName} · ${primaryType}` : primaryType}
+            <span className="text-emerald-500">1</span>
+            <span>
+              <span className="text-foreground/85">State completeness</span>
+              {" — "}
+              {missingRequired.length > 0
+                ? `${missingRequired.length} gap${missingRequired.length === 1 ? "" : "s"}`
+                : "coverage reviewed"}
             </span>
           </li>
           <li className="flex gap-2">
-            <span className="text-emerald-500">✓</span>
-            Checked common states
+            <span className="text-emerald-500">2</span>
+            <span>
+              <span className="text-foreground/85">Static JSX / shadcn</span>
+              {" — "}
+              {staticIssues.length} finding
+              {staticIssues.length === 1 ? "" : "s"}
+            </span>
           </li>
           <li className="flex gap-2">
             <span
@@ -243,38 +260,64 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
                 previewChecked ? "text-emerald-500" : "text-muted-foreground/60"
               }
             >
-              {previewChecked ? "✓" : "·"}
+              3
             </span>
-            {previewChecked
-              ? "Ran preview DOM checks where available"
-              : "Preview DOM checks pending (after Analyze)"}
+            <span>
+              <span className="text-foreground/85">Preview DOM</span>
+              {" — "}
+              {previewChecked
+                ? `${previewIssues.length || axeViolations.length} finding${
+                    (previewIssues.length || axeViolations.length) === 1
+                      ? ""
+                      : "s"
+                  }`
+                : "pending after Analyze"}
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-emerald-500">4</span>
+            <span>
+              <span className="text-foreground/85">Rule-based fixes</span>
+              {" — "}
+              {suggestedFixes.length} template
+              {suggestedFixes.length === 1 ? "" : "s"}
+            </span>
           </li>
         </ul>
+        <p className="mt-2 font-mono text-[10px] text-muted-foreground/80">
+          {componentName ? `${componentName} · ${primaryType}` : primaryType}
+          {parseErrors.length > 0 ? " · parse recovery notes" : ""}
+        </p>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs defaultValue="states" className="w-full">
         <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4">
-          <TabsTrigger value="overview" className="text-xs sm:text-sm">
-            Overview
-            {issues.length > 0 && (
+          <TabsTrigger value="states" className="text-xs sm:text-sm">
+            {CHECK_LAYERS.states.short}
+            {missingRequired.length > 0 && (
               <span className="ml-1.5 font-mono text-[10px] opacity-70">
-                {issues.length}
+                {missingRequired.length}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="states" className="text-xs sm:text-sm">
-            States
-          </TabsTrigger>
-          <TabsTrigger value="accessibility" className="text-xs sm:text-sm">
-            A11y
-            {a11yCount > 0 && (
+          <TabsTrigger value="static" className="text-xs sm:text-sm">
+            {CHECK_LAYERS.static.short}
+            {staticIssues.length > 0 && (
               <span className="ml-1.5 font-mono text-[10px] opacity-70">
-                {a11yCount}
+                {staticIssues.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="preview" className="text-xs sm:text-sm">
+            {CHECK_LAYERS.preview.short}
+            {(previewIssues.length > 0 || axeViolations.length > 0) && (
+              <span className="ml-1.5 font-mono text-[10px] opacity-70">
+                {previewIssues.length || axeViolations.length}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger value="fixes" className="text-xs sm:text-sm">
-            Fixes
+            {CHECK_LAYERS.fixes.short}
             {suggestedFixes.length > 0 && (
               <span className="ml-1.5 font-mono text-[10px] opacity-70">
                 {suggestedFixes.length}
@@ -283,48 +326,25 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="mt-4 space-y-4">
-          <div className="flex flex-wrap gap-1.5">
-            {detectedComponents.length === 0 ? (
-              <Badge variant="outline">No shadcn primitives detected</Badge>
-            ) : (
-              detectedComponents.map((c) => (
-                <Badge
-                  key={`${c.type}-${c.name}`}
-                  variant="secondary"
-                  className="font-mono text-[11px]"
-                >
-                  {c.name}
-                </Badge>
-              ))
-            )}
+        <TabsContent value="states" className="mt-4 space-y-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              {CHECK_LAYERS.states.label}
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {CHECK_LAYERS.states.blurb} Force states in the live preview to see
+              what the happy path hid.
+            </p>
           </div>
 
-          <div className="space-y-2.5">
-            {issues.length === 0 ? (
-              <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                No issues found — nice work.
-              </p>
-            ) : (
-              issues.map((issue) => <IssueCard key={issue.id} issue={issue} />)
-            )}
-          </div>
-
-          {parseErrors.length > 0 && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                Parse notes
-              </p>
-              <div className="mt-2 space-y-1 font-mono text-xs text-muted-foreground">
-                {parseErrors.map((e) => (
-                  <p key={e}>{e}</p>
-                ))}
-              </div>
+          {stateIssues.length > 0 && (
+            <div className="space-y-2.5">
+              {stateIssues.map((issue) => (
+                <IssueCard key={issue.id} issue={issue} />
+              ))}
             </div>
           )}
-        </TabsContent>
 
-        <TabsContent value="states" className="mt-4 space-y-3">
           <p className="text-xs text-muted-foreground">
             Green = detected in source · Sky = not implemented · Gray = optional
           </p>
@@ -373,39 +393,69 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
           </div>
         </TabsContent>
 
-        <TabsContent value="accessibility" className="mt-4 space-y-5">
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Static code checks scan pasted JSX. Preview DOM checks run axe-core
-            on the simulated preview — not a WCAG certification.
-          </p>
+        <TabsContent value="static" className="mt-4 space-y-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              {CHECK_LAYERS.static.label}
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {CHECK_LAYERS.static.blurb} Supporting risk detection — not a full
+              accessibility audit.
+            </p>
+          </div>
 
-          <section className="space-y-2.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                Static code checks
-              </p>
-              <Badge variant="outline" className="font-mono text-[10px]">
-                Static
-              </Badge>
-              <Badge
-                variant="outline"
-                className="border-emerald-500/30 bg-emerald-500/10 font-mono text-[10px] text-emerald-900 dark:text-emerald-200"
-              >
-                A11y rule
-              </Badge>
-            </div>
-            {staticA11yIssues.length === 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {detectedComponents.length === 0 ? (
+              <Badge variant="outline">No shadcn primitives detected</Badge>
+            ) : (
+              detectedComponents.map((c) => (
+                <Badge
+                  key={`${c.type}-${c.name}`}
+                  variant="secondary"
+                  className="font-mono text-[11px]"
+                >
+                  {c.name}
+                </Badge>
+              ))
+            )}
+          </div>
+
+          <div className="space-y-2.5">
+            {staticIssues.length === 0 ? (
               <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                No static accessibility issues flagged.
+                No static JSX/shadcn issues flagged.
               </p>
             ) : (
-              staticA11yIssues.map((issue) => (
+              staticIssues.map((issue) => (
                 <IssueCard key={issue.id} issue={issue} />
               ))
             )}
-          </section>
+          </div>
 
-          <Separator />
+          {parseErrors.length > 0 && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                Parse notes
+              </p>
+              <div className="mt-2 space-y-1 font-mono text-xs text-muted-foreground">
+                {parseErrors.map((e) => (
+                  <p key={e}>{e}</p>
+                ))}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="preview" className="mt-4 space-y-5">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              {CHECK_LAYERS.preview.label}
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {CHECK_LAYERS.preview.blurb} Supporting risk detection — does not
+              certify WCAG compliance.
+            </p>
+          </div>
 
           <section className="space-y-2.5">
             <div className="flex flex-wrap items-center gap-2">
@@ -426,12 +476,12 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
               <p className="text-sm text-muted-foreground">
                 Preview DOM checks run automatically after Analyze.
               </p>
-            ) : previewA11yIssues.length === 0 && axeViolations.length === 0 ? (
+            ) : previewIssues.length === 0 && axeViolations.length === 0 ? (
               <p className="text-sm text-emerald-600 dark:text-emerald-400">
                 No preview DOM violations detected.
               </p>
-            ) : previewA11yIssues.length > 0 ? (
-              previewA11yIssues.map((issue) => (
+            ) : previewIssues.length > 0 ? (
+              previewIssues.map((issue) => (
                 <IssueCard key={issue.id} issue={issue} />
               ))
             ) : (
@@ -501,10 +551,14 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
         </TabsContent>
 
         <TabsContent value="fixes" className="mt-4 space-y-4">
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Fixes are deterministic templates based on detected patterns. Review
-            before applying.
-          </p>
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              {CHECK_LAYERS.fixes.label}
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {CHECK_LAYERS.fixes.blurb}
+            </p>
+          </div>
           {suggestedFixes.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No suggested fixes for this run.
@@ -520,6 +574,10 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
           )}
         </TabsContent>
       </Tabs>
+
+      <p className="text-[10px] leading-relaxed text-muted-foreground/80">
+        {LIMITATION_COPY}
+      </p>
     </div>
   );
 }
@@ -616,7 +674,7 @@ function FixCard({
   const why =
     fix.whyItMatters ||
     issue?.description ||
-    "Improves interaction clarity and accessibility.";
+    "Improves interaction clarity and reduces common accessibility risks.";
   const suggestion =
     fix.suggestion || fix.description || issue?.suggestion || "";
 

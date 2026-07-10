@@ -92,22 +92,22 @@ export const commandCenterData: CommandCenterData = {
   updatedAt: "2026-07-10",
   sprintName: "EdgeLens MVP Launch Sprint",
   sprintGoal:
-    "Ship a demo-ready analyzer with trustworthy report labeling, recording route, launch docs, and polished README.",
+    "Ship a demo-ready pre-flight checker with state completeness as the hero, trustworthy report layers, recording route, launch docs, and polished README.",
   metrics: [
     {
       id: "issues",
       label: "Issue progress",
-      value: "3 / 7",
-      detail: "Done · 3 in flight · 1 in review",
-      progress: 43,
+      value: "3 / 8",
+      detail: "Done · 4 in flight · 1 in review",
+      progress: 38,
       tone: "warning",
     },
     {
       id: "launch",
       label: "Launch readiness",
-      value: "68%",
-      detail: "Product core solid · docs & QA remain",
-      progress: 68,
+      value: "70%",
+      detail: "Positioning narrowed · docs & QA remain",
+      progress: 70,
       tone: "warning",
     },
     {
@@ -152,6 +152,15 @@ export const commandCenterData: CommandCenterData = {
       priority: "P0",
       notes: "docs/launch.md merged",
       href: "https://linear.app/sherv-nariman/issue/SHE-10",
+    },
+    {
+      id: "SHE-19",
+      title: "Narrow MVP positioning around state completeness pre-flight checks",
+      status: "in_progress",
+      owner: "Cursor",
+      priority: "P0",
+      notes: "State hero · four layers · limitation copy · prior art",
+      href: "https://linear.app/sherv-nariman/issue/SHE-19",
     },
     {
       id: "SHE-9",
@@ -222,9 +231,9 @@ export const commandCenterData: CommandCenterData = {
         },
         {
           id: "p2",
-          label: "Static / preview DOM / fix labels separated",
+          label: "State / static / preview / fix layers separated",
           status: "done",
-          note: "SHE-6",
+          note: "SHE-6 + SHE-19",
         },
         {
           id: "p3",
@@ -238,6 +247,12 @@ export const commandCenterData: CommandCenterData = {
         },
         {
           id: "p5",
+          label: "State completeness hero + limitation copy",
+          status: "partial",
+          note: "SHE-19",
+        },
+        {
+          id: "p6",
           label: "axe-core preview DOM credibility pass",
           status: "partial",
           note: "SHE-7 in review",
@@ -261,9 +276,9 @@ export const commandCenterData: CommandCenterData = {
         },
         {
           id: "d3",
-          label: "Launch video / thread assets drafted",
+          label: "Forced-states demo story in launch assets",
           status: "done",
-          note: "docs/launch.md",
+          note: "docs/launch.md · SHE-19",
         },
       ],
     },
@@ -273,9 +288,9 @@ export const commandCenterData: CommandCenterData = {
       items: [
         {
           id: "doc1",
-          label: "Launch-ready README",
+          label: "Launch-ready README + prior art",
           status: "partial",
-          note: "SHE-9",
+          note: "SHE-9 / SHE-19",
         },
         {
           id: "doc2",
@@ -333,10 +348,10 @@ export const commandCenterData: CommandCenterData = {
       id: "cursor",
       name: "Cursor",
       role: "High-context UI & implementation",
-      focus: "Analyzer UX, recording, command center UI",
-      activeIssues: ["SHE-11", "SHE-12"],
-      capacity: "focused",
-      nextUp: "Ship /internal/command-center dashboard",
+      focus: "SHE-19 positioning, analyzer UX, command center",
+      activeIssues: ["SHE-19", "SHE-11", "SHE-12"],
+      capacity: "at_capacity",
+      nextUp: "Land SHE-19 positioning PR",
     },
     {
       id: "codex",
@@ -350,6 +365,13 @@ export const commandCenterData: CommandCenterData = {
   ],
   nextActions: [
     {
+      id: "a0",
+      action: "Land SHE-19 state-completeness positioning (UI + docs)",
+      owner: "Cursor",
+      relatedIssue: "SHE-19",
+      urgency: "now",
+    },
+    {
       id: "a1",
       action: "Run local QA on axe-core preview DOM labeling (SHE-7)",
       owner: "Sherv",
@@ -361,7 +383,7 @@ export const commandCenterData: CommandCenterData = {
       action: "Land visual command center at /internal/command-center",
       owner: "Cursor",
       relatedIssue: "SHE-12",
-      urgency: "now",
+      urgency: "soon",
     },
     {
       id: "a3",

@@ -16,8 +16,13 @@ import { SiteFooter } from "@/components/site-footer";
 import { PreviewErrorBoundary } from "@/components/preview-error-boundary";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { cn } from "@/lib/utils";
+import {
+  DEMO_STORY,
+  HERO_SUPPORT,
+  LIMITATION_COPY,
+} from "@/lib/product-copy";
 
-/** Strongest launch-demo story: unlabeled inputs + missing async/error UI. */
+/** Launch demo: happy-path form that forgets loading/error/disabled states. */
 const RECORDING_EXAMPLE_ID = "login-form";
 
 export interface AnalyzerAppProps {
@@ -193,14 +198,13 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div className="space-y-1">
                 <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-emerald-400/90">
-                  AI component → gaps → preview → fixes
+                  happy path → force states → gaps → fixes
                 </p>
                 <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
                   EdgeLens
                 </h1>
                 <p className="max-w-2xl text-sm text-muted-foreground">
-                  Login form demo — missing states &amp; a11y, live preview, and
-                  copyable fixes. Client-side only.
+                  {DEMO_STORY}
                 </p>
               </div>
               {report && (
@@ -227,9 +231,8 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
                 <h2 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
                   Analyzer
                 </h2>
-                <p className="max-w-xl text-sm text-muted-foreground">
-                  Paste Cursor/shadcn output → states, a11y, and copyable fixes.
-                  Client-side only.
+                <p className="max-w-2xl text-sm text-muted-foreground">
+                  {HERO_SUPPORT}
                 </p>
               </div>
             </div>
@@ -309,7 +312,19 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
           </div>
         </main>
 
-        {!isRecording && <SiteFooter />}
+        {!isRecording && (
+          <>
+            <aside
+              aria-label="Product limitations"
+              className="mx-auto max-w-7xl px-4 pb-6 sm:px-6"
+            >
+              <p className="max-w-3xl text-[11px] leading-relaxed text-muted-foreground/90">
+                {LIMITATION_COPY}
+              </p>
+            </aside>
+            <SiteFooter />
+          </>
+        )}
       </div>
     </ErrorBoundary>
   );

@@ -16,6 +16,8 @@ export function SiteFooter() {
             >
               Sherv Nariman
             </a>
+            {" · "}
+            pre-flight for React/shadcn UI states
           </p>
         </div>
 
