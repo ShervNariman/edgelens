@@ -278,7 +278,7 @@ export function PreviewPane({
       <div
         ref={previewRef}
         className={cn(
-          "relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-lg border border-dashed p-6 transition-all duration-300",
+          "relative flex min-h-[260px] flex-col overflow-hidden rounded-lg border border-dashed p-4 sm:p-6 transition-all duration-300",
           "bg-[linear-gradient(180deg,oklch(0.97_0_0),oklch(0.94_0_0))] dark:bg-[linear-gradient(180deg,oklch(0.18_0_0),oklch(0.14_0_0))]",
           meta.a11yIssues.length > 0 && "ring-1 ring-destructive/35",
           currentNotImplemented && "border-sky-500/35",
@@ -287,11 +287,11 @@ export function PreviewPane({
         )}
       >
         {meta.a11yIssues.length > 0 && hasCode && (
-          <div className="pointer-events-none absolute top-3 left-3 right-3 z-10 flex flex-wrap gap-1.5">
+          <div className="pointer-events-none z-10 mb-4 flex w-full flex-wrap gap-1.5">
             {meta.a11yIssues.slice(0, 2).map((issue) => (
               <span
                 key={issue}
-                className="rounded-md border border-destructive/40 bg-destructive/15 px-2 py-1 font-mono text-[10px] text-destructive dark:text-red-100"
+                className="max-w-full rounded-md border border-destructive/40 bg-destructive/15 px-2 py-1 font-mono text-[10px] leading-snug text-destructive break-words dark:text-red-100"
               >
                 {issue}
               </span>
@@ -300,18 +300,22 @@ export function PreviewPane({
         )}
 
         {!hasCode ? (
-          <p className="text-center text-sm text-muted-foreground">
-            Paste code and analyze to simulate states.
-          </p>
+          <div className="flex flex-1 items-center justify-center">
+            <p className="text-center text-sm text-muted-foreground">
+              Paste code and analyze to simulate states.
+            </p>
+          </div>
         ) : (
           <div
             key={`${meta.primaryType}-${forcedState}`}
-            className="w-full max-w-sm transition-all duration-300 ease-out"
+            className="flex w-full flex-1 items-center justify-center transition-all duration-300 ease-out"
             style={{
               animation: "edgelens-preview-in 220ms ease-out",
             }}
           >
-            <ComponentPreview meta={meta} state={forcedState} />
+            <div className="w-full max-w-sm">
+              <ComponentPreview meta={meta} state={forcedState} />
+            </div>
           </div>
         )}
       </div>
@@ -786,8 +790,8 @@ function DialogPreview({
     stateFlags(state);
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="mb-3 flex justify-center">
+    <div className="flex w-full max-w-sm flex-col items-center gap-4">
+      <div className="flex justify-center">
         <Button
           variant="outline"
           size="sm"
@@ -805,7 +809,7 @@ function DialogPreview({
 
       <div
         className={cn(
-          "rounded-xl border border-border bg-popover p-4 shadow-xl transition-all duration-200",
+          "w-full rounded-xl border border-border bg-popover p-4 shadow-xl transition-all duration-200",
           isFocus && "ring-3 ring-ring/40",
           isError && "border-destructive/50",
           isDisabled && "opacity-50"
