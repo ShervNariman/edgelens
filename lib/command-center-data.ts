@@ -98,31 +98,31 @@ export const commandCenterData: CommandCenterData = {
     {
       id: "issues",
       label: "Issue progress",
-      value: "9 / 11",
-      detail: "Done · SHE-7 QA · SHE-19 positioning",
-      progress: 82,
+      value: "10 / 12",
+      detail: "SHE-16 QA done · SHE-19 positioning · SHE-7 accept",
+      progress: 83,
       tone: "success",
     },
     {
       id: "launch",
       label: "Launch readiness",
-      value: "88%",
-      detail: "Positioning in flight · QA + checklist remain",
-      progress: 88,
+      value: "92%",
+      detail: "Local QA cleared · demo + URLs remain",
+      progress: 92,
       tone: "warning",
     },
     {
       id: "blockers",
       label: "Open blockers",
-      value: "4",
-      detail: "SHE-7 QA · checklist · demo · URLs",
+      value: "2",
+      detail: "Demo capture · launch URL placeholders",
       tone: "warning",
     },
     {
       id: "prs",
       label: "Open PRs",
-      value: "1",
-      detail: "PR #16 SHE-19 · main green",
+      value: "2",
+      detail: "SHE-19 + SHE-16 QA · main green",
       tone: "warning",
     },
   ],
@@ -209,12 +209,21 @@ export const commandCenterData: CommandCenterData = {
       href: "https://linear.app/sherv-nariman/issue/SHE-15",
     },
     {
+      id: "SHE-16",
+      title: "Final local QA and release checklist",
+      status: "done",
+      owner: "Cursor",
+      priority: "P0",
+      notes: "Lint/typecheck/build/smoke + browser QA; checklist verified",
+      href: "https://linear.app/sherv-nariman/issue/SHE-16",
+    },
+    {
       id: "SHE-7",
       title: "Improve axe-core preview DOM check integration",
       status: "in_review",
       owner: "Sherv",
       priority: "P0",
-      notes: "Code on main — needs local QA pass",
+      notes: "SHE-16 Cursor QA passed on all 5 examples — Sherv accept",
       href: "https://linear.app/sherv-nariman/issue/SHE-7",
     },
     {
@@ -229,30 +238,13 @@ export const commandCenterData: CommandCenterData = {
   ],
   blockers: [
     {
-      id: "b1",
-      title: "axe-core preview DOM integration needs local QA",
-      severity: "high",
-      owner: "Sherv",
-      relatedIssue: "SHE-7",
-      detail:
-        "Integration is on main; confirm preview DOM checks label correctly and do not regress analyzer trust copy.",
-    },
-    {
-      id: "b2",
-      title: "Final release checklist not fully verified",
-      severity: "medium",
-      owner: "Sherv",
-      detail:
-        "docs/release-checklist.md still has unchecked launch-critical boxes.",
-    },
-    {
       id: "b3",
       title: "Launch demo capture not recorded",
       severity: "medium",
       owner: "Sherv",
       relatedIssue: "SHE-8",
       detail:
-        "/record/edgelens is stable; human recording/screenshots still pending approval.",
+        "/record/edgelens is stable and SHE-16-verified; human recording/screenshots still pending approval.",
     },
     {
       id: "b4",
@@ -273,6 +265,7 @@ export const commandCenterData: CommandCenterData = {
           id: "p1",
           label: "Analyzer polished and demo-ready",
           status: "done",
+          note: "SHE-16 QA",
         },
         {
           id: "p2",
@@ -284,6 +277,7 @@ export const commandCenterData: CommandCenterData = {
           id: "p3",
           label: "Five launch-demo examples produce useful reports",
           status: "done",
+          note: "SHE-16 smoke + browser",
         },
         {
           id: "p4",
@@ -299,8 +293,8 @@ export const commandCenterData: CommandCenterData = {
         {
           id: "p6",
           label: "axe-core preview DOM credibility pass",
-          status: "partial",
-          note: "SHE-7 needs local QA",
+          status: "done",
+          note: "SHE-16 local QA · Sherv accept SHE-7",
         },
         {
           id: "p7",
@@ -318,7 +312,7 @@ export const commandCenterData: CommandCenterData = {
           id: "d1",
           label: "/record/edgelens capture-friendly route",
           status: "done",
-          note: "SHE-8",
+          note: "SHE-8 · rechecked SHE-16",
         },
         {
           id: "d2",
@@ -367,6 +361,12 @@ export const commandCenterData: CommandCenterData = {
           status: "done",
           note: "SHE-15",
         },
+        {
+          id: "doc5",
+          label: "Release checklist walked (local QA)",
+          status: "done",
+          note: "SHE-16",
+        },
       ],
     },
     {
@@ -377,11 +377,13 @@ export const commandCenterData: CommandCenterData = {
           id: "q1",
           label: "npm run typecheck passes",
           status: "done",
+          note: "SHE-16",
         },
         {
           id: "q2",
           label: "npm run build passes",
           status: "done",
+          note: "SHE-16",
         },
         {
           id: "q3",
@@ -400,6 +402,12 @@ export const commandCenterData: CommandCenterData = {
           status: "done",
           note: "SHE-12/13/14 dups closed",
         },
+        {
+          id: "q6",
+          label: "npm run lint + smoke-examples",
+          status: "done",
+          note: "SHE-16",
+        },
       ],
     },
   ],
@@ -408,10 +416,10 @@ export const commandCenterData: CommandCenterData = {
       id: "sherv",
       name: "Sherv",
       role: "Owner · PM · local QA",
-      focus: "SHE-7 local QA, release checklist, launch capture",
+      focus: "Accept SHE-7, approve demo capture, launch timing",
       activeIssues: ["SHE-7"],
       capacity: "focused",
-      nextUp: "Local QA pass on axe-core preview DOM integration",
+      nextUp: "Accept SHE-7 using SHE-16 evidence; record launch demo",
     },
     {
       id: "cursor",
@@ -442,20 +450,14 @@ export const commandCenterData: CommandCenterData = {
     },
     {
       id: "a1",
-      action: "Run local QA on axe-core preview DOM labeling (SHE-7)",
+      action: "Accept SHE-7 using SHE-16 local QA evidence",
       owner: "Sherv",
       relatedIssue: "SHE-7",
       urgency: "now",
     },
     {
-      id: "a2",
-      action: "Walk docs/release-checklist.md and verify launch-critical boxes",
-      owner: "Sherv",
-      urgency: "soon",
-    },
-    {
       id: "a3",
-      action: "Record launch demo via /record/edgelens once QA clears",
+      action: "Record launch demo via /record/edgelens and approve screenshots",
       owner: "Sherv",
       relatedIssue: "SHE-8",
       urgency: "soon",

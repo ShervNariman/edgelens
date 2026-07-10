@@ -4,7 +4,7 @@ Lightweight operating dashboard for the EdgeLens MVP launch sprint. Keep this fi
 
 **Manager loop:** see [`docs/manager-loop.md`](docs/manager-loop.md) for the full operating playbook (includes **code health and stability review**). Visual dashboard: `/internal/command-center` (data in `lib/command-center-data.ts`).
 
-**Snapshot date:** 2026-07-10
+**Snapshot date:** 2026-07-10 (SHE-16 local QA pass)
 
 ## Mission
 
@@ -22,15 +22,16 @@ Help React teams run a deterministic, client-side pre-flight check on AI-generat
 
 | Area | Status | Notes | Next action |
 | --- | --- | --- | --- |
-| Core analyzer | Needs local QA | Static / preview DOM / fix labels shipped; axe-core runner present. | Sherv: validate SHE-7 on representative examples. |
-| Recording demo | Done | `/record/edgelens` stable on `main` (SHE-8). | Capture final launch recording with forced-states story. |
+| Core analyzer | Local QA passed | SHE-16 verified trust labels + all 5 examples; axe preview DOM labeled honestly. | Sherv: optional spot-check; then accept SHE-7. |
+| Recording demo | Done | `/record/edgelens` stable on `main` (SHE-8); SHE-16 confirmed clean load. | Capture final launch recording with forced-states story. |
 | Launch assets | Done | `docs/launch.md` merged (SHE-10); SHE-19 narrows framing. | Replace `<repo link>` / `<demo link>` placeholders before public post. |
-| README/repo polish | Done | Launch-ready README merged (SHE-9); SHE-19 adds prior art + wedge. | Spot-check links/commands before announce. |
+| README/repo polish | Done | Launch-ready README merged (SHE-9); prior art + wedge present. | Spot-check links/commands before announce. |
 | MVP positioning | In progress | SHE-19: state completeness wedge, limitation copy, prior art. | Land PR #16; keep UI + docs aligned. |
+| Release checklist | Mostly verified | SHE-16 walked `docs/release-checklist.md`; launch-critical product/repo/QA boxes checked. | Human: demo approval, URLs, nariman.dev, public launch steps. |
 | Command center | Done | Docs (SHE-11) + visual route (SHE-12) on `main`. | Keep tables + `lib/command-center-data.ts` synced after each merge. |
 | Manager ops loop | Done | SHE-15 playbook + truth refresh merged (PR #14); SHE-21 extends with code-health review. | Run loop + code health pass after each sprint change. |
-| Light UI | Done | MVP forced to light mode (SHE-14). | Protect in future PRs. |
-| Preview polish | Done | Dialog badge overlap fixed (SHE-13). | Re-check during SHE-7 QA. |
+| Light UI | Done | MVP forced to light mode (SHE-14); reconfirmed in SHE-16. | Protect in future PRs. |
+| Preview polish | Done | Dialog badge overlap fixed (SHE-13). | Re-checked during SHE-16 QA. |
 
 ## Completed work
 
@@ -45,29 +46,30 @@ Help React teams run a deterministic, client-side pre-flight check on AI-generat
 | SHE-13 | Dialog preview badge overlap | Done | Badges no longer overlay Dialog trigger (PR #11). |
 | SHE-14 | Force MVP light mode | Done | Light-only UI for launch consistency (PR #12). |
 | SHE-15 | Manager agent operating loop | Done | Playbook + command center truth sync (PR #14). |
+| SHE-16 | Final local QA + release checklist | Done | Lint/typecheck/build/smoke + browser QA; checklist boxes verified. |
 
 ## In-flight work
 
 | Issue | Work | Status | Owner/agent | Review focus |
 | --- | --- | --- | --- | --- |
-| SHE-7 | axe-core preview DOM integration | Needs local QA | Sherv (+ Cursor if fixes) | Confirm preview DOM findings are labeled and understandable on examples. |
+| SHE-7 | axe-core preview DOM integration | Local QA passed (Cursor) | Sherv | SHE-16 evidence in `docs/release-checklist.md`; Sherv accept/close. |
 | SHE-19 | Narrow MVP positioning (state completeness) | In progress | Cursor | UI layers, limitation copy, README prior art, launch framing; reconcile with main. |
 | SHE-21 | Code health & stability review in manager loop | In progress | Cursor | Documented in `docs/manager-loop.md` via PR #16; use on PR QA passes. |
 
 ## Next priorities
 
 1. Land SHE-19 positioning: state completeness hero, four check layers, limitation copy, prior art.
-2. Complete local QA for SHE-7 and file any launch-blocking analyzer fixes.
-3. Walk `docs/release-checklist.md` and check only verified boxes.
-4. Record the launch demo via `/record/edgelens` (forced-states story).
-5. Replace launch URL placeholders and publish only after checklist + QA clear.
+2. Sherv: accept SHE-7 using SHE-16 QA evidence (or file follow-ups).
+3. Record the launch demo via `/record/edgelens` (forced-states story) and approve screenshots.
+4. Replace launch URL placeholders and complete nariman.dev readiness.
+5. Run remaining public-launch checklist boxes only after demo + URLs clear.
 
 ## Launch blockers
 
 | Blocker | Status | Owner/agent | Exit criteria |
 | --- | --- | --- | --- |
-| SHE-7 local QA | Open | Sherv | Preview DOM + axe-core checks pass manual QA on representative examples; labels remain honest. |
-| Final release checklist | Open | Sherv | `docs/release-checklist.md` launch-critical boxes verified. |
+| SHE-7 local QA | Cleared by Cursor (pending Sherv accept) | Sherv | Preview DOM + axe-core checks verified on all 5 examples; labels remain honest. |
+| Final release checklist | Mostly cleared | Sherv | Remaining: human demo approval, URL placeholders, nariman.dev, public launch steps. |
 | Launch demo capture | Open | Sherv | Recording or screenshots approved from `/record/edgelens`. |
 | Launch URL placeholders | Open | Codex / Sherv | Public repo/demo links substituted in `docs/launch.md` before posting. |
 
@@ -79,7 +81,7 @@ Help React teams run a deterministic, client-side pre-flight check on AI-generat
 | SHE-13 | PR #11 | PR #10 |
 | SHE-14 | PR #12 | PR #13 |
 
-Open PRs at last snapshot: **PR #16 (SHE-19)**. Prefer closing loser duplicates immediately after the winner merges.
+Open PRs at last snapshot: **PR #16 (SHE-19)** + **SHE-16 QA PR**. Prefer closing loser duplicates immediately after the winner merges.
 
 ## Agent responsibilities
 
