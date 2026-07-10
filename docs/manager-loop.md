@@ -57,8 +57,9 @@ If Linear, GitHub, and the command center disagree, treat **GitHub `main` + open
    - `npm run typecheck`
    - `npm run build`
    - Manual route checks where applicable (`/`, `/analyzer`, `/record/edgelens`, `/internal/command-center`)
-8. **Recommend merge / no-merge** with a one-line rationale.
-9. **Update next actions** in Linear + command center in the same pass.
+8. **Run a code health and stability review** (see below) before merge/launch recommendations.
+9. **Recommend merge / no-merge** with a one-line rationale.
+10. **Update next actions** in Linear + command center in the same pass.
 
 ## Duplicate detection checklist
 
@@ -75,9 +76,38 @@ If yes: close the loser PR, stop the duplicate agent, and leave a short note on 
 
 | Recommend | When |
 | --- | --- |
-| **Merge** | Single PR per issue, validation green, acceptance criteria met, no constraint violations, command center update included or follow-up noted |
-| **Hold** | Missing validation, unclear acceptance criteria, conflicts with in-flight work on same files, or product-constraint risk |
+| **Merge** | Single PR per issue, validation green, acceptance criteria met, no constraint violations, code health not Risky, command center update included or follow-up noted |
+| **Hold** | Missing validation, unclear acceptance criteria, conflicts with in-flight work on same files, product-constraint risk, or code-health cleanup marked as a merge blocker |
 | **Close as duplicate** | Same issue already merged or a better PR exists; prefer the PR with cleaner validation + smaller diff |
+
+## Code health and stability review
+
+During manager / PR QA passes, review whether the codebase still has:
+
+- clean file boundaries and clear ownership
+- no duplicated logic between analyzer, preview, examples, docs, and command-center data
+- no stale hardcoded project status after issue/PR changes
+- no accidental backend/API/LLM calls
+- no arbitrary pasted JSX execution
+- no unnecessary dependencies
+- no dead code, unused exports, or stale TODOs that matter for launch
+- no fragile product copy scattered across multiple files when shared copy should be centralized
+- no regressions to light-mode MVP UI
+- no product-copy drift from the state-completeness-first positioning
+- no console/runtime errors during manual QA
+- no TypeScript, lint, or build failures
+
+Manager output should include:
+
+1. **Code health verdict:** Clean / Mostly clean / Needs cleanup / Risky
+2. **Stability risk:** Low / Medium / High
+3. **Files or areas to inspect**
+4. **Any duplicated/stale logic**
+5. **Any product-constraint violations**
+6. **Required cleanup before merge, if any**
+7. **Whether cleanup should be a blocker or a follow-up issue**
+
+Track deeper cleanup work under Linear **SHE-21** when it is more than a small PR fix.
 
 ## Issue quality bar
 
@@ -120,6 +150,15 @@ Paste into Linear (SHE-15 or a new ops comment) after each manager pass:
 ### Drift vs command center
 - Fixed:
 - Remaining:
+
+### Code health and stability
+- Verdict: Clean / Mostly clean / Needs cleanup / Risky
+- Stability risk: Low / Medium / High
+- Files/areas to inspect:
+- Duplicated/stale logic:
+- Product-constraint violations:
+- Required cleanup before merge:
+- Blocker or follow-up:
 
 ### Next highest-value task
 - Issue:

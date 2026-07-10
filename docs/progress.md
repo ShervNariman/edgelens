@@ -15,6 +15,7 @@ Use this table as the source of truth for launch-sprint issue status across Line
 | [SHE-13](https://linear.app/sherv-nariman/issue/SHE-13) | Dialog preview badge overlap | Done | Cursor | Merged #11; dup #10 closed | Badges stacked above Dialog trigger. | Re-verify during SHE-7 QA. |
 | [SHE-14](https://linear.app/sherv-nariman/issue/SHE-14) | Force MVP light mode | Done | Cursor | Merged #12; dup #13 closed | Light-only UI for launch recording. | Protect in future PRs. |
 | [SHE-15](https://linear.app/sherv-nariman/issue/SHE-15) | Manager operating loop | Done | Cursor | Merged #14 | Playbook + command center truth refresh. | Run loop after each sprint change. |
+| SHE-21 | Code health & stability review | In progress | Cursor | Via PR #16 | Extends manager loop with codebase cleanliness/stability checks before merge/launch. | Land section in `docs/manager-loop.md`. |
 | [SHE-7](https://linear.app/sherv-nariman/issue/SHE-7/edgelens-improve-axe-core-preview-dom-check-integration) | axe-core preview DOM | Needs local QA | Sherv / Cursor | Code on `main`; no open PR | Integration present; launch confidence needs human QA. | Run examples; file fixes if labels/findings confuse. |
 | [SHE-19](https://linear.app/sherv-nariman/issue/SHE-19/edgelens-narrow-mvp-positioning-around-state-completeness-pre) | MVP positioning (state completeness) | In progress | Cursor | Draft PR #16 | Pre-flight state checks hero; a11y supporting; limitation copy; prior art. | Rebase on main; land UI + docs. |
 
@@ -24,7 +25,7 @@ Use this table as the source of truth for launch-sprint issue status across Line
 | --- | --- | --- |
 | Launch sprint board | Project: EdgeLens MVP Launch Sprint, grouped by status | See active, blocked, in-review, and done launch work. |
 | Agent-owned work | Labels: `codex`, `edgelens`, `docs`; grouped by assignee/status | Track work that can be picked up by Codex or Cursor. |
-| Release readiness | Issues SHE-7, SHE-19, plus release checklist / launch capture | Focus review on items that still gate public launch. |
+| Release readiness | Issues SHE-7, SHE-19, SHE-21, plus release checklist / launch capture | Focus review on items that still gate public launch. |
 
 ## Update rules
 

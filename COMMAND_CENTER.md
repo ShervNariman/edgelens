@@ -2,7 +2,7 @@
 
 Lightweight operating dashboard for the EdgeLens MVP launch sprint. Keep this file current enough that a human, Cursor agent, or Codex agent can understand the project state in one scan.
 
-**Manager loop:** see [`docs/manager-loop.md`](docs/manager-loop.md) for the full operating playbook. Visual dashboard: `/internal/command-center` (data in `lib/command-center-data.ts`).
+**Manager loop:** see [`docs/manager-loop.md`](docs/manager-loop.md) for the full operating playbook (includes **code health and stability review**). Visual dashboard: `/internal/command-center` (data in `lib/command-center-data.ts`).
 
 **Snapshot date:** 2026-07-10
 
@@ -28,7 +28,7 @@ Help React teams run a deterministic, client-side pre-flight check on AI-generat
 | README/repo polish | Done | Launch-ready README merged (SHE-9); SHE-19 adds prior art + wedge. | Spot-check links/commands before announce. |
 | MVP positioning | In progress | SHE-19: state completeness wedge, limitation copy, prior art. | Land PR #16; keep UI + docs aligned. |
 | Command center | Done | Docs (SHE-11) + visual route (SHE-12) on `main`. | Keep tables + `lib/command-center-data.ts` synced after each merge. |
-| Manager ops loop | Done | SHE-15 playbook + truth refresh merged (PR #14). | Run loop after each sprint change. |
+| Manager ops loop | Done | SHE-15 playbook + truth refresh merged (PR #14); SHE-21 extends with code-health review. | Run loop + code health pass after each sprint change. |
 | Light UI | Done | MVP forced to light mode (SHE-14). | Protect in future PRs. |
 | Preview polish | Done | Dialog badge overlap fixed (SHE-13). | Re-check during SHE-7 QA. |
 
@@ -52,6 +52,7 @@ Help React teams run a deterministic, client-side pre-flight check on AI-generat
 | --- | --- | --- | --- | --- |
 | SHE-7 | axe-core preview DOM integration | Needs local QA | Sherv (+ Cursor if fixes) | Confirm preview DOM findings are labeled and understandable on examples. |
 | SHE-19 | Narrow MVP positioning (state completeness) | In progress | Cursor | UI layers, limitation copy, README prior art, launch framing; reconcile with main. |
+| SHE-21 | Code health & stability review in manager loop | In progress | Cursor | Documented in `docs/manager-loop.md` via PR #16; use on PR QA passes. |
 
 ## Next priorities
 
