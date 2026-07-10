@@ -97,9 +97,9 @@ export const commandCenterData: CommandCenterData = {
     {
       id: "issues",
       label: "Issue progress",
-      value: "3 / 6",
-      detail: "Done · 2 in flight · 1 in review",
-      progress: 50,
+      value: "3 / 7",
+      detail: "Done · 3 in flight · 1 in review",
+      progress: 43,
       tone: "warning",
     },
     {
