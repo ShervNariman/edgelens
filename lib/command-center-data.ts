@@ -114,8 +114,8 @@ export const commandCenterData: CommandCenterData = {
     {
       id: "blockers",
       label: "Open blockers",
-      value: "3",
-      detail: "SHE-7 QA · checklist · demo capture",
+      value: "4",
+      detail: "SHE-7 QA · checklist · demo · URLs",
       tone: "warning",
     },
     {
