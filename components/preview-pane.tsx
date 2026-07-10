@@ -278,7 +278,7 @@ export function PreviewPane({
       <div
         ref={previewRef}
         className={cn(
-          "relative flex min-h-[280px] flex-col overflow-hidden rounded-lg border border-dashed p-4 sm:p-6 transition-all duration-300",
+          "relative flex min-h-[280px] flex-col gap-6 overflow-hidden rounded-lg border border-dashed p-4 sm:p-6 transition-all duration-300",
           "bg-[linear-gradient(180deg,oklch(0.97_0_0),oklch(0.94_0_0))] dark:bg-[linear-gradient(180deg,oklch(0.18_0_0),oklch(0.14_0_0))]",
           meta.a11yIssues.length > 0 && "ring-1 ring-destructive/35",
           currentNotImplemented && "border-sky-500/35",
@@ -287,7 +287,7 @@ export function PreviewPane({
         )}
       >
         {meta.a11yIssues.length > 0 && hasCode && (
-          <div className="pointer-events-none z-10 mb-5 flex w-full shrink-0 flex-wrap gap-1.5">
+          <div className="pointer-events-none z-10 flex w-full shrink-0 flex-wrap gap-1.5">
             {meta.a11yIssues.slice(0, 2).map((issue) => (
               <span
                 key={issue}
@@ -312,7 +312,7 @@ export function PreviewPane({
               "flex w-full flex-1 justify-center transition-all duration-300 ease-out",
               // When a11y badges are present, stack content below them instead of
               // vertically centering into the badge row.
-              meta.a11yIssues.length > 0 ? "items-start pt-1" : "items-center"
+              meta.a11yIssues.length > 0 ? "items-start" : "items-center"
             )}
             style={{
               animation: "edgelens-preview-in 220ms ease-out",
