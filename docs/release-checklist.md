@@ -2,7 +2,9 @@
 
 Operational checklist for deciding when EdgeLens is ready for public launch. Check boxes should reflect verified work only.
 
-**Last local QA pass:** 2026-07-10 (SHE-16 · Cursor) — see [QA evidence](#she-16-local-qa-evidence-2026-07-10) below.
+**Last local QA pass:** 2026-07-10 (SHE-16 · Cursor · PR #17) — see [QA evidence](#she-16-local-qa-evidence-2026-07-10) below.
+
+**Sprint truth (this PR):** SHE-7 / SHE-19 / SHE-21 Done · PR #16 merged · PR #17 is the only open PR (→ 0 after merge). Remaining launch blockers are human gates only (demo capture, URL placeholders, nariman.dev, public launch steps).
 
 ## Product readiness
 
@@ -56,7 +58,7 @@ Operational checklist for deciding when EdgeLens is ready for public launch. Che
 - [x] Manual smoke pass covers built-in examples.
 - [x] Preview DOM and accessibility findings are reviewed for clarity (supporting layer).
 - [x] Mobile or narrow viewport basics are checked for the primary pages.
-- [ ] Launch blockers in `COMMAND_CENTER.md` are closed or explicitly accepted.
+- [ ] Launch blockers in `COMMAND_CENTER.md` are closed or explicitly accepted. *(Engineering blockers cleared; human launch gates remain.)*
 
 ## Public launch checklist
 
@@ -127,4 +129,4 @@ Smoke example scores (engine):
 1. Approve final demo recording/screenshots from `/record/edgelens`.
 2. Replace `<repo link>` / `<demo link>` placeholders in `docs/launch.md`.
 3. nariman.dev destination + publish readiness.
-4. Accept or close remaining launch blockers in `COMMAND_CENTER.md`, then run the public launch checklist.
+4. Run the public launch checklist (merge remaining launch-critical PRs, align Linear, announce only after demo + links verified).
