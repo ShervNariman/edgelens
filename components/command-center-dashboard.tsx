@@ -33,13 +33,13 @@ import {
 function statusBadgeClass(status: IssueStatus | ChecklistStatus): string {
   switch (status) {
     case "done":
-      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
+      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-800";
     case "in_progress":
-      return "border-sky-500/30 bg-sky-500/10 text-sky-200";
+      return "border-sky-500/30 bg-sky-500/10 text-sky-800";
     case "in_review":
-      return "border-violet-500/30 bg-violet-500/10 text-violet-200";
+      return "border-violet-500/30 bg-violet-500/10 text-violet-800";
     case "partial":
-      return "border-amber-500/30 bg-amber-500/10 text-amber-200";
+      return "border-amber-500/30 bg-amber-500/10 text-amber-800";
     case "blocked":
       return "border-destructive/35 bg-destructive/10 text-destructive";
     default:
@@ -71,14 +71,14 @@ function severityBadgeClass(severity: BlockerSeverity): string {
     return "border-destructive/35 bg-destructive/10 text-destructive";
   }
   if (severity === "medium") {
-    return "border-amber-500/30 bg-amber-500/10 text-amber-200";
+    return "border-amber-500/30 bg-amber-500/10 text-amber-800";
   }
   return "border-border bg-muted/40 text-muted-foreground";
 }
 
 function metricToneClass(tone: SprintMetric["tone"]): string {
-  if (tone === "success") return "text-emerald-400";
-  if (tone === "warning") return "text-amber-300";
+  if (tone === "success") return "text-emerald-600";
+  if (tone === "warning") return "text-amber-600";
   if (tone === "danger") return "text-destructive";
   return "text-foreground";
 }
@@ -98,12 +98,12 @@ function capacityLabel(capacity: AgentWorkload["capacity"]): string {
 
 function capacityBadgeClass(capacity: AgentWorkload["capacity"]): string {
   if (capacity === "available") {
-    return "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
+    return "border-emerald-500/30 bg-emerald-500/10 text-emerald-800";
   }
   if (capacity === "focused") {
-    return "border-sky-500/30 bg-sky-500/10 text-sky-200";
+    return "border-sky-500/30 bg-sky-500/10 text-sky-800";
   }
-  return "border-amber-500/30 bg-amber-500/10 text-amber-200";
+  return "border-amber-500/30 bg-amber-500/10 text-amber-800";
 }
 
 function urgencyBadgeClass(urgency: NextAction["urgency"]): string {
@@ -111,17 +111,17 @@ function urgencyBadgeClass(urgency: NextAction["urgency"]): string {
     return "border-destructive/35 bg-destructive/10 text-destructive";
   }
   if (urgency === "soon") {
-    return "border-amber-500/30 bg-amber-500/10 text-amber-200";
+    return "border-amber-500/30 bg-amber-500/10 text-amber-800";
   }
   return "border-border bg-muted/40 text-muted-foreground";
 }
 
 function ChecklistIcon({ status }: { status: ChecklistStatus }) {
   if (status === "done") {
-    return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />;
+    return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />;
   }
   if (status === "partial") {
-    return <CircleDashed className="h-3.5 w-3.5 text-amber-300" />;
+    return <CircleDashed className="h-3.5 w-3.5 text-amber-600" />;
   }
   if (status === "blocked") {
     return <AlertTriangle className="h-3.5 w-3.5 text-destructive" />;
@@ -162,9 +162,9 @@ export function CommandCenterDashboard() {
       <header className="border-b border-border/60">
         <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-muted-foreground">
-            <LayoutDashboard className="h-3.5 w-3.5 text-emerald-400" />
+            <LayoutDashboard className="h-3.5 w-3.5 text-emerald-600" />
             <span>internal.ops</span>
-            <span className="text-emerald-400/80">|</span>
+            <span className="text-emerald-600/80">|</span>
             <span>snapshot {data.updatedAt}</span>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -251,12 +251,12 @@ export function CommandCenterDashboard() {
                                 href={issue.href}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="font-mono text-xs text-emerald-400 hover:underline"
+                                className="font-mono text-xs text-emerald-600 hover:underline"
                               >
                                 {issue.id}
                               </a>
                             ) : (
-                              <span className="font-mono text-xs text-emerald-400">
+                              <span className="font-mono text-xs text-emerald-600">
                                 {issue.id}
                               </span>
                             )}

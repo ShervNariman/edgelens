@@ -15,7 +15,7 @@ export function Hero({ onTryDemo, compact = false }: HeroProps) {
     <section className="relative overflow-hidden border-b border-border/60">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_oklch(0.35_0.08_160_/_0.25),_transparent_55%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_oklch(0.88_0.06_160_/_0.45),_transparent_55%)]"
       />
       <div
         aria-hidden
@@ -29,9 +29,9 @@ export function Hero({ onTryDemo, compact = false }: HeroProps) {
         )}
       >
         <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-          <ScanSearch className="h-3.5 w-3.5 text-emerald-400" />
+          <ScanSearch className="h-3.5 w-3.5 text-emerald-600" />
           <span>edgelens.audit()</span>
-          <span className="text-emerald-400/80">|</span>
+          <span className="text-emerald-600/80">|</span>
         </div>
 
         <div className={cn("max-w-3xl", compact ? "space-y-2" : "space-y-5")}>

@@ -528,13 +528,13 @@ function SelectPreview({
           className={cn(
             "truncate transition-colors duration-300",
             !isLoading && "text-muted-foreground",
-            isLoading && "text-sky-300"
+            isLoading && "text-sky-600"
           )}
         >
           {isLoading ? "Loading options…" : meta.placeholder}
         </span>
         {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin text-sky-300" />
+          <Loader2 className="h-4 w-4 animate-spin text-sky-600" />
         ) : (
           <ChevronDown
             className={cn(
@@ -620,7 +620,7 @@ function CardPreview({
             </CardDescription>
           </div>
           {isLoading && (
-            <Badge variant="outline" className="font-mono text-[10px] text-sky-300">
+            <Badge variant="outline" className="font-mono text-[10px] text-sky-700">
               loading
             </Badge>
           )}
@@ -630,7 +630,7 @@ function CardPreview({
             </Badge>
           )}
           {isEmpty && (
-            <Badge variant="outline" className="font-mono text-[10px] text-amber-200">
+            <Badge variant="outline" className="font-mono text-[10px] text-amber-800">
               empty
             </Badge>
           )}
@@ -661,7 +661,7 @@ function CardPreview({
                 />
               </div>
             ))}
-            <div className="flex items-center justify-center gap-2 pt-2 text-xs text-sky-300/90">
+            <div className="flex items-center justify-center gap-2 pt-2 text-xs text-sky-700/90">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Loading projects…
             </div>

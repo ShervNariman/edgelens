@@ -36,7 +36,7 @@ export class PreviewErrorBoundary extends Component<Props, State> {
               </p>
               <button
                 type="button"
-                className="mt-3 text-xs text-emerald-400 underline-offset-2 hover:underline"
+                className="mt-3 text-xs text-emerald-600 underline-offset-2 hover:underline"
                 onClick={() => this.setState({ hasError: false, message: "" })}
               >
                 Retry preview

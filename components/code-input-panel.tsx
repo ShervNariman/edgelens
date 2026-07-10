@@ -66,7 +66,7 @@ export function CodeInputPanel({
                 <Sparkles
                   className={cn(
                     "h-3 w-3 shrink-0",
-                    active ? "text-emerald-400" : "text-muted-foreground"
+                    active ? "text-emerald-600" : "text-muted-foreground"
                   )}
                 />
                 {example.label}

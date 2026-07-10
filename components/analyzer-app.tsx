@@ -141,14 +141,14 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
         className={cn(
           "min-h-screen bg-background text-foreground",
           isRecording &&
-            "bg-[radial-gradient(ellipse_at_top,_oklch(0.28_0.04_160_/_0.35),_transparent_55%)]"
+            "bg-[radial-gradient(ellipse_at_top,_oklch(0.9_0.04_160_/_0.5),_transparent_55%)]"
         )}
       >
         {isRecording ? (
           <header className="border-b border-border/40 bg-background/70 backdrop-blur-md">
             <div className="mx-auto flex h-9 max-w-[1600px] items-center justify-between px-4 sm:px-6 xl:px-8">
               <div className="flex items-center gap-2 font-mono text-sm">
-                <span className="text-emerald-400">›</span>
+                <span className="text-emerald-600">›</span>
                 <span>edgelens</span>
                 <span className="hidden text-muted-foreground/70 sm:inline">
                   · record
@@ -163,7 +163,7 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
           <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
             <div className="mx-auto flex h-11 max-w-7xl items-center justify-between px-4 sm:px-6">
               <div className="flex items-center gap-2 font-mono text-sm">
-                <span className="text-emerald-400">›</span>
+                <span className="text-emerald-600">›</span>
                 <span>edgelens</span>
               </div>
               <button
@@ -192,7 +192,7 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
           {isRecording ? (
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div className="space-y-1">
-                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-emerald-400/90">
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-emerald-600/90">
                   AI component → gaps → preview → fixes
                 </p>
                 <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
