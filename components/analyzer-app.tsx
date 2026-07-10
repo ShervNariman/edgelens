@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   AnalysisReport,
   AxeViolation,
@@ -15,12 +15,38 @@ import { PreviewPane } from "@/components/preview-pane";
 import { SiteFooter } from "@/components/site-footer";
 import { PreviewErrorBoundary } from "@/components/preview-error-boundary";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { cn } from "@/lib/utils";
 
-export function AnalyzerApp() {
+/** Strongest launch-demo story: unlabeled inputs + missing async/error UI. */
+const RECORDING_EXAMPLE_ID = "login-form";
+
+export interface AnalyzerAppProps {
+  /**
+   * `recording` strips chrome and auto-loads the launch demo for
+   * /record/edgelens screen-capture. Default preserves /analyzer.
+   */
+  mode?: "default" | "recording";
+}
+
+function resolveInitialExample(mode: "default" | "recording"): CodeExample {
+  if (mode === "recording") {
+    return (
+      CODE_EXAMPLES.find((ex) => ex.id === RECORDING_EXAMPLE_ID) ??
+      CODE_EXAMPLES[0]
+    );
+  }
+  return CODE_EXAMPLES[0];
+}
+
+export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
+  const isRecording = mode === "recording";
   const analyzerRef = useRef<HTMLElement>(null);
-  const [code, setCode] = useState(CODE_EXAMPLES[0].code);
+  const autoAnalyzedRef = useRef(false);
+  const initialExample = resolveInitialExample(mode);
+
+  const [code, setCode] = useState(initialExample.code);
   const [selectedExample, setSelectedExample] = useState<CodeExample | null>(
-    CODE_EXAMPLES[0]
+    initialExample
   );
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -62,8 +88,8 @@ export function AnalyzerApp() {
       } finally {
         setIsAnalyzing(false);
       }
-    }, 350);
-  }, [code]);
+    }, isRecording ? 180 : 350);
+  }, [code, isRecording]);
 
   const handleAxeResults = useCallback((violations: AxeViolation[]) => {
     setPendingAxe(false);
@@ -82,43 +108,132 @@ export function AnalyzerApp() {
     });
   }, []);
 
+  // Recording route: auto-analyze the preloaded demo once on mount (client-only).
+  useEffect(() => {
+    if (!isRecording || autoAnalyzedRef.current) return;
+    if (!code.trim()) return;
+    autoAnalyzedRef.current = true;
+
+    setIsAnalyzing(true);
+    setError(null);
+    setPendingAxe(false);
+
+    const timer = window.setTimeout(() => {
+      try {
+        const next = analyzeComponent(code);
+        setReport(next);
+        setForcedState("default");
+        setPendingAxe(true);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Analysis failed");
+        setReport(null);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [isRecording, code]);
+
   return (
     <ErrorBoundary fallbackTitle="EdgeLens hit a runtime error">
-      <div className="min-h-screen bg-background text-foreground">
-        <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
-          <div className="mx-auto flex h-11 max-w-7xl items-center justify-between px-4 sm:px-6">
-            <div className="flex items-center gap-2 font-mono text-sm">
-              <span className="text-emerald-400">›</span>
-              <span>edgelens</span>
+      <div
+        className={cn(
+          "min-h-screen bg-background text-foreground",
+          isRecording &&
+            "bg-[radial-gradient(ellipse_at_top,_oklch(0.28_0.04_160_/_0.35),_transparent_55%)]"
+        )}
+      >
+        {isRecording ? (
+          <header className="border-b border-border/40 bg-background/70 backdrop-blur-md">
+            <div className="mx-auto flex h-9 max-w-[1600px] items-center justify-between px-4 sm:px-6 xl:px-8">
+              <div className="flex items-center gap-2 font-mono text-sm">
+                <span className="text-emerald-400">›</span>
+                <span>edgelens</span>
+                <span className="hidden text-muted-foreground/70 sm:inline">
+                  · record
+                </span>
+              </div>
+              <p className="font-mono text-[10px] text-muted-foreground/80">
+                launch capture
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={scrollToAnalyzer}
-              className="text-xs text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Analyzer
-            </button>
-          </div>
-        </header>
+          </header>
+        ) : (
+          <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
+            <div className="mx-auto flex h-11 max-w-7xl items-center justify-between px-4 sm:px-6">
+              <div className="flex items-center gap-2 font-mono text-sm">
+                <span className="text-emerald-400">›</span>
+                <span>edgelens</span>
+              </div>
+              <button
+                type="button"
+                onClick={scrollToAnalyzer}
+                className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Analyzer
+              </button>
+            </div>
+          </header>
+        )}
 
-        <Hero onTryDemo={scrollToAnalyzer} compact />
+        {!isRecording && <Hero onTryDemo={scrollToAnalyzer} compact />}
 
         <main
           id="analyzer"
           ref={analyzerRef}
-          className="mx-auto max-w-7xl scroll-mt-14 px-4 py-6 sm:px-6 sm:py-8"
+          className={cn(
+            "scroll-mt-14",
+            isRecording
+              ? "mx-auto max-w-[1600px] px-4 py-4 sm:px-6 sm:py-5 xl:px-8"
+              : "mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8"
+          )}
         >
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-            <div className="space-y-1">
-              <h2 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
-                Analyzer
-              </h2>
-              <p className="max-w-xl text-sm text-muted-foreground">
-                Paste Cursor/shadcn output → states, a11y, and copyable fixes.
-                Client-side only.
-              </p>
+          {isRecording ? (
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+              <div className="space-y-1">
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-emerald-400/90">
+                  AI component → gaps → preview → fixes
+                </p>
+                <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
+                  EdgeLens
+                </h1>
+                <p className="max-w-2xl text-sm text-muted-foreground">
+                  Login form demo — missing states &amp; a11y, live preview, and
+                  copyable fixes. Client-side only.
+                </p>
+              </div>
+              {report && (
+                <div className="rounded-lg border border-border/60 bg-card/40 px-3 py-2 font-mono text-[11px] text-muted-foreground">
+                  <span className="text-foreground">{report.componentName}</span>
+                  <span className="mx-1.5 text-border">·</span>
+                  <span>{report.primaryType}</span>
+                  <span className="mx-1.5 text-border">·</span>
+                  <span
+                    className={
+                      report.summary.score >= 50
+                        ? "text-amber-400"
+                        : "text-destructive"
+                    }
+                  >
+                    score {report.summary.score}
+                  </span>
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+              <div className="space-y-1">
+                <h2 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
+                  Analyzer
+                </h2>
+                <p className="max-w-xl text-sm text-muted-foreground">
+                  Paste Cursor/shadcn output → states, a11y, and copyable fixes.
+                  Client-side only.
+                </p>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div
@@ -129,8 +244,22 @@ export function AnalyzerApp() {
             </div>
           )}
 
-          <div className="grid items-start gap-5 lg:grid-cols-12 lg:gap-6">
-            <section className="rounded-xl border border-border/70 bg-card/20 p-4 sm:p-5 lg:col-span-5 lg:sticky lg:top-14 lg:max-h-[calc(100vh-4.5rem)] lg:overflow-y-auto">
+          <div
+            className={cn(
+              "grid items-start",
+              isRecording
+                ? "gap-4 lg:grid-cols-12 lg:gap-5"
+                : "gap-5 lg:grid-cols-12 lg:gap-6"
+            )}
+          >
+            <section
+              className={cn(
+                "rounded-xl border border-border/70 bg-card/20 p-4 sm:p-5 lg:col-span-5",
+                !isRecording &&
+                  "lg:sticky lg:top-14 lg:max-h-[calc(100vh-4.5rem)] lg:overflow-y-auto",
+                isRecording && "lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto"
+              )}
+            >
               <CodeInputPanel
                 code={code}
                 onChange={handleCodeChange}
@@ -138,10 +267,16 @@ export function AnalyzerApp() {
                 isAnalyzing={isAnalyzing}
                 selectedExample={selectedExample}
                 onSelectExample={handleSelectExample}
+                compact={isRecording}
               />
             </section>
 
-            <section className="flex flex-col gap-5 lg:col-span-7">
+            <section
+              className={cn(
+                "flex flex-col lg:col-span-7",
+                isRecording ? "gap-4" : "gap-5"
+              )}
+            >
               <PreviewErrorBoundary>
                 <PreviewPane
                   code={code}
@@ -174,7 +309,7 @@ export function AnalyzerApp() {
           </div>
         </main>
 
-        <SiteFooter />
+        {!isRecording && <SiteFooter />}
       </div>
     </ErrorBoundary>
   );
