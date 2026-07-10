@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ScanSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { HERO_SUPPORT, HERO_TAGLINE } from "@/lib/product-copy";
 
 interface HeroProps {
   onTryDemo: () => void;
@@ -30,7 +31,7 @@ export function Hero({ onTryDemo, compact = false }: HeroProps) {
       >
         <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
           <ScanSearch className="h-3.5 w-3.5 text-emerald-400" />
-          <span>edgelens.audit()</span>
+          <span>edgelens.preflight()</span>
           <span className="text-emerald-400/80">|</span>
         </div>
 
@@ -51,12 +52,16 @@ export function Hero({ onTryDemo, compact = false }: HeroProps) {
               compact ? "text-sm sm:text-base" : "text-lg sm:text-xl"
             )}
           >
-            Audit the UI details AI misses — states + accessibility for shadcn
-            &amp; Cursor output.
+            {HERO_TAGLINE}
           </p>
           {!compact && (
+            <p className="max-w-2xl text-sm text-muted-foreground/90">
+              {HERO_SUPPORT}
+            </p>
+          )}
+          {!compact && (
             <p className="font-mono text-sm text-muted-foreground/80">
-              tiny useful frontend utility · rule-based · client-side
+              pre-flight · state completeness · client-side · no LLM
             </p>
           )}
         </div>
@@ -84,7 +89,7 @@ export function Hero({ onTryDemo, compact = false }: HeroProps) {
         {!compact && (
           <dl className="grid max-w-2xl grid-cols-1 gap-4 pt-2 sm:grid-cols-3">
             {[
-              { label: "engine", value: "rule-based" },
+              { label: "hero check", value: "state completeness" },
               { label: "runtime", value: "client-side" },
               { label: "llm", value: "none (mvp)" },
             ].map((item) => (

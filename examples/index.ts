@@ -11,15 +11,16 @@ export interface CodeExample {
 
 /**
  * Intentionally imperfect Cursor/shadcn-style outputs for the launch demo.
- * Each example is designed to surface clear Overview / States / A11y / Fixes findings.
+ * Story: the happy path looked done until EdgeLens forced the states AI forgot.
+ * Each example surfaces State completeness / Static / Preview / Fixes findings.
  */
 export const CODE_EXAMPLES: CodeExample[] = [
   {
     id: "icon-button",
-    label: "Icon button · a11y",
+    label: "Icon button · states + name",
     description: "Looks fine visually — missing name, focus, loading, disabled",
     reveals:
-      "Icon button without aria-label, plus missing focus / loading / disabled handling.",
+      "Missing focus / loading / disabled states, plus icon button without accessible name.",
     code: `import { Button } from "@/components/ui/button"
 import { Save } from "lucide-react"
 
@@ -33,10 +34,10 @@ export function SaveButton({ onSave }: { onSave: () => void }) {
   },
   {
     id: "login-form",
-    label: "Login form · states",
-    description: "Card form with unlabeled inputs and no async/error UI",
+    label: "Login form · force states",
+    description: "Happy-path card form — no loading, disabled, or error UI",
     reveals:
-      "Unlabeled inputs, no loading/disabled/error states, and hard-coded button colors.",
+      "Happy path looks done until you force loading / disabled / error; unlabeled inputs too.",
     code: `import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -70,7 +71,7 @@ export function LoginForm() {
     label: "Project list · empty/loading",
     description: "Card list that always maps — no loading, empty, or error UI",
     reveals:
-      "Missing loading / empty / error branches, list keys, and hover affordance on rows.",
+      "Missing loading / empty / error branches — the list looked done on the happy path.",
     code: `import {
   Card,
   CardContent,
@@ -106,7 +107,7 @@ export function ProjectsCard({
   },
   {
     id: "settings-dialog",
-    label: "Dialog · Radix a11y",
+    label: "Dialog · shadcn composition",
     description: "Dialog missing title/description; clickable div in footer",
     reveals:
       "Dialog without DialogTitle/Description, plus a non-keyboard Save control.",
@@ -154,7 +155,7 @@ export function SettingsDialog({ themes }: { themes: string[] }) {
     label: "Select · focus/empty",
     description: "Select without value label, empty guard, or disabled handling",
     reveals:
-      "Select missing SelectValue/label, empty-state guard, and disabled/focus cues.",
+      "Missing empty-state guard and disabled/focus cues, plus SelectValue/label gaps.",
     code: `import { Button } from "@/components/ui/button"
 import {
   Select,

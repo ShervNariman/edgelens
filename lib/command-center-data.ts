@@ -93,22 +93,22 @@ export const commandCenterData: CommandCenterData = {
   updatedAt: "2026-07-10",
   sprintName: "EdgeLens MVP Launch Sprint",
   sprintGoal:
-    "Ship a demo-ready analyzer with trustworthy report labeling, recording route, launch docs, and polished README.",
+    "Ship a demo-ready pre-flight checker with state completeness as the hero, trustworthy report layers, recording route, launch docs, and polished README.",
   metrics: [
     {
       id: "issues",
       label: "Issue progress",
-      value: "8 / 10",
-      detail: "Done · SHE-7 QA · SHE-15 ops",
-      progress: 80,
+      value: "9 / 11",
+      detail: "Done · SHE-7 QA · SHE-19 positioning",
+      progress: 82,
       tone: "success",
     },
     {
       id: "launch",
       label: "Launch readiness",
-      value: "86%",
-      detail: "Product core shipped · QA + checklist remain",
-      progress: 86,
+      value: "88%",
+      detail: "Positioning in flight · QA + checklist remain",
+      progress: 88,
       tone: "warning",
     },
     {
@@ -121,9 +121,9 @@ export const commandCenterData: CommandCenterData = {
     {
       id: "prs",
       label: "Open PRs",
-      value: "0",
-      detail: "Duplicates closed · main green",
-      tone: "success",
+      value: "1",
+      detail: "PR #16 SHE-19 · main green",
+      tone: "warning",
     },
   ],
   issues: [
@@ -200,6 +200,15 @@ export const commandCenterData: CommandCenterData = {
       href: "https://linear.app/sherv-nariman/issue/SHE-14",
     },
     {
+      id: "SHE-15",
+      title: "Set up manager agent operating loop",
+      status: "done",
+      owner: "Cursor",
+      priority: "P0",
+      notes: "Playbook + command center truth refresh (PR #14)",
+      href: "https://linear.app/sherv-nariman/issue/SHE-15",
+    },
+    {
       id: "SHE-7",
       title: "Improve axe-core preview DOM check integration",
       status: "in_review",
@@ -209,13 +218,13 @@ export const commandCenterData: CommandCenterData = {
       href: "https://linear.app/sherv-nariman/issue/SHE-7",
     },
     {
-      id: "SHE-15",
-      title: "Set up manager agent operating loop",
+      id: "SHE-19",
+      title: "Narrow MVP positioning around state completeness pre-flight checks",
       status: "in_progress",
       owner: "Cursor",
       priority: "P0",
-      notes: "Playbook + command center truth refresh",
-      href: "https://linear.app/sherv-nariman/issue/SHE-15",
+      notes: "Draft PR #16 — state hero · four layers · limitation copy · prior art",
+      href: "https://linear.app/sherv-nariman/issue/SHE-19",
     },
   ],
   blockers: [
@@ -267,9 +276,9 @@ export const commandCenterData: CommandCenterData = {
         },
         {
           id: "p2",
-          label: "Static / preview DOM / fix labels separated",
+          label: "State / static / preview / fix layers separated",
           status: "done",
-          note: "SHE-6",
+          note: "SHE-6 + SHE-19",
         },
         {
           id: "p3",
@@ -283,12 +292,18 @@ export const commandCenterData: CommandCenterData = {
         },
         {
           id: "p5",
+          label: "State completeness hero + limitation copy",
+          status: "partial",
+          note: "SHE-19",
+        },
+        {
+          id: "p6",
           label: "axe-core preview DOM credibility pass",
           status: "partial",
           note: "SHE-7 needs local QA",
         },
         {
-          id: "p6",
+          id: "p7",
           label: "MVP light UI only",
           status: "done",
           note: "SHE-14",
@@ -312,9 +327,9 @@ export const commandCenterData: CommandCenterData = {
         },
         {
           id: "d3",
-          label: "Launch video / thread assets drafted",
+          label: "Forced-states demo story in launch assets",
           status: "done",
-          note: "docs/launch.md",
+          note: "docs/launch.md · SHE-19",
         },
         {
           id: "d4",
@@ -330,9 +345,9 @@ export const commandCenterData: CommandCenterData = {
       items: [
         {
           id: "doc1",
-          label: "Launch-ready README",
-          status: "done",
-          note: "SHE-9",
+          label: "Launch-ready README + prior art",
+          status: "partial",
+          note: "SHE-9 done · SHE-19 prior art in flight",
         },
         {
           id: "doc2",
@@ -349,7 +364,7 @@ export const commandCenterData: CommandCenterData = {
         {
           id: "doc4",
           label: "Manager operating loop documented",
-          status: "partial",
+          status: "done",
           note: "SHE-15",
         },
       ],
@@ -402,10 +417,10 @@ export const commandCenterData: CommandCenterData = {
       id: "cursor",
       name: "Cursor",
       role: "High-context UI & implementation",
-      focus: "Manager loop + UI/analyzer follow-ups",
-      activeIssues: ["SHE-15"],
+      focus: "SHE-19 positioning + UI/analyzer follow-ups",
+      activeIssues: ["SHE-19"],
       capacity: "focused",
-      nextUp: "Land SHE-15; fix any SHE-7 QA findings if filed",
+      nextUp: "Land SHE-19 positioning PR against latest main",
     },
     {
       id: "codex",
@@ -419,6 +434,13 @@ export const commandCenterData: CommandCenterData = {
   ],
   nextActions: [
     {
+      id: "a0",
+      action: "Land SHE-19 state-completeness positioning (UI + docs)",
+      owner: "Cursor",
+      relatedIssue: "SHE-19",
+      urgency: "now",
+    },
+    {
       id: "a1",
       action: "Run local QA on axe-core preview DOM labeling (SHE-7)",
       owner: "Sherv",
@@ -427,33 +449,26 @@ export const commandCenterData: CommandCenterData = {
     },
     {
       id: "a2",
-      action: "Land manager loop playbook + sync command center (SHE-15)",
-      owner: "Cursor",
-      relatedIssue: "SHE-15",
-      urgency: "now",
-    },
-    {
-      id: "a3",
       action: "Walk docs/release-checklist.md and verify launch-critical boxes",
       owner: "Sherv",
       urgency: "soon",
     },
     {
-      id: "a4",
+      id: "a3",
       action: "Record launch demo via /record/edgelens once QA clears",
       owner: "Sherv",
       relatedIssue: "SHE-8",
       urgency: "soon",
     },
     {
-      id: "a5",
+      id: "a4",
       action: "Replace launch URL placeholders in docs/launch.md",
       owner: "Codex",
       relatedIssue: "SHE-10",
       urgency: "soon",
     },
     {
-      id: "a6",
+      id: "a5",
       action: "Publish launch post/thread using docs/launch.md assets",
       owner: "Sherv",
       urgency: "later",

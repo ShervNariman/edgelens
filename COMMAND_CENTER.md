@@ -2,31 +2,33 @@
 
 Lightweight operating dashboard for the EdgeLens MVP launch sprint. Keep this file current enough that a human, Cursor agent, or Codex agent can understand the project state in one scan.
 
-**Manager loop:** see [`docs/manager-loop.md`](docs/manager-loop.md) for the full operating playbook. Visual dashboard: `/internal/command-center` (data in `lib/command-center-data.ts`).
+**Manager loop:** see [`docs/manager-loop.md`](docs/manager-loop.md) for the full operating playbook (includes **code health and stability review**). Visual dashboard: `/internal/command-center` (data in `lib/command-center-data.ts`).
 
 **Snapshot date:** 2026-07-10
 
 ## Mission
 
-Help React teams quickly audit UI components for interaction-state gaps and accessibility issues directly in the browser, without backend services, secrets, or generated claims.
+Help React teams run a deterministic, client-side pre-flight check on AI-generated React/shadcn components — focused on **state completeness** and common shadcn/Radix accessibility risks — without backend services, secrets, or overclaimed compliance.
 
 ## Product positioning
 
-- **What it is:** A rule-based, client-side Next.js app for analyzing React UI component code and preview DOM output.
-- **Who it is for:** Builders who want fast feedback on accessibility, interaction states, and UI quality before launch.
-- **What it is not:** A backend product, database-backed workflow, LLM analyzer, or automated compliance guarantee.
-- **Launch message:** Practical component QA for visible states, accessible markup, and preview-derived checks.
+- **What it is:** A local deterministic pre-flight checker for generated React/shadcn UI (state completeness hero; supporting static JSX/shadcn and preview DOM checks).
+- **Who it is for:** Builders shipping AI-generated shadcn/React components who want a fast sanity check before review or QA.
+- **What it is not:** A broad accessibility auditor, WCAG checker, Storybook replacement, axe alternative, generic React analyzer, AI code-review tool, backend product, or LLM analyzer.
+- **Launch message:** EdgeLens helps catch missing loading, empty, error, disabled, focus, active, selected states and common shadcn/Radix accessibility gotchas before components ship.
+- **Demo story:** The component looked done on the happy path until EdgeLens forced the states AI forgot.
 
 ## Current sprint status
 
 | Area | Status | Notes | Next action |
 | --- | --- | --- | --- |
 | Core analyzer | Needs local QA | Static / preview DOM / fix labels shipped; axe-core runner present. | Sherv: validate SHE-7 on representative examples. |
-| Recording demo | Done | `/record/edgelens` stable on `main` (SHE-8). | Capture final launch recording. |
-| Launch assets | Done | `docs/launch.md` merged (SHE-10). | Replace `<repo link>` / `<demo link>` placeholders before public post. |
-| README/repo polish | Done | Launch-ready README merged (SHE-9). | Spot-check links/commands before announce. |
+| Recording demo | Done | `/record/edgelens` stable on `main` (SHE-8). | Capture final launch recording with forced-states story. |
+| Launch assets | Done | `docs/launch.md` merged (SHE-10); SHE-19 narrows framing. | Replace `<repo link>` / `<demo link>` placeholders before public post. |
+| README/repo polish | Done | Launch-ready README merged (SHE-9); SHE-19 adds prior art + wedge. | Spot-check links/commands before announce. |
+| MVP positioning | In progress | SHE-19: state completeness wedge, limitation copy, prior art. | Land PR #16; keep UI + docs aligned. |
 | Command center | Done | Docs (SHE-11) + visual route (SHE-12) on `main`. | Keep tables + `lib/command-center-data.ts` synced after each merge. |
-| Manager ops loop | In progress | SHE-15 playbook + truth refresh. | Land SHE-15; run loop after each sprint change. |
+| Manager ops loop | Done | SHE-15 playbook + truth refresh merged (PR #14); SHE-21 extends with code-health review. | Run loop + code health pass after each sprint change. |
 | Light UI | Done | MVP forced to light mode (SHE-14). | Protect in future PRs. |
 | Preview polish | Done | Dialog badge overlap fixed (SHE-13). | Re-check during SHE-7 QA. |
 
@@ -42,20 +44,22 @@ Help React teams quickly audit UI components for interaction-state gaps and acce
 | SHE-12 | Visual command center | Done | `/internal/command-center` route shipped (PR #7). |
 | SHE-13 | Dialog preview badge overlap | Done | Badges no longer overlay Dialog trigger (PR #11). |
 | SHE-14 | Force MVP light mode | Done | Light-only UI for launch consistency (PR #12). |
+| SHE-15 | Manager agent operating loop | Done | Playbook + command center truth sync (PR #14). |
 
 ## In-flight work
 
 | Issue | Work | Status | Owner/agent | Review focus |
 | --- | --- | --- | --- | --- |
 | SHE-7 | axe-core preview DOM integration | Needs local QA | Sherv (+ Cursor if fixes) | Confirm preview DOM findings are labeled and understandable on examples. |
-| SHE-15 | Manager agent operating loop | In progress | Cursor | Playbook + command center truth sync; no open duplicate PRs. |
+| SHE-19 | Narrow MVP positioning (state completeness) | In progress | Cursor | UI layers, limitation copy, README prior art, launch framing; reconcile with main. |
+| SHE-21 | Code health & stability review in manager loop | In progress | Cursor | Documented in `docs/manager-loop.md` via PR #16; use on PR QA passes. |
 
 ## Next priorities
 
-1. Complete local QA for SHE-7 and file any launch-blocking analyzer fixes.
-2. Finish SHE-15 so every future agent follows one operating loop.
+1. Land SHE-19 positioning: state completeness hero, four check layers, limitation copy, prior art.
+2. Complete local QA for SHE-7 and file any launch-blocking analyzer fixes.
 3. Walk `docs/release-checklist.md` and check only verified boxes.
-4. Record the launch demo via `/record/edgelens`.
+4. Record the launch demo via `/record/edgelens` (forced-states story).
 5. Replace launch URL placeholders and publish only after checklist + QA clear.
 
 ## Launch blockers
@@ -75,15 +79,15 @@ Help React teams quickly audit UI components for interaction-state gaps and acce
 | SHE-13 | PR #11 | PR #10 |
 | SHE-14 | PR #12 | PR #13 |
 
-Open PRs at last snapshot: **none**. Prefer closing loser duplicates immediately after the winner merges.
+Open PRs at last snapshot: **PR #16 (SHE-19)**. Prefer closing loser duplicates immediately after the winner merges.
 
 ## Agent responsibilities
 
 | Agent/role | Responsibilities | Handoff notes |
 | --- | --- | --- |
 | Manager loop | Inspect Linear + GitHub, detect duplicates/blockers, refine issues, recommend merge order, refresh this dashboard. | Follow `docs/manager-loop.md`. |
-| Codex | Scoped issue work, docs, checklists, available checks, PR summaries. | Do not invent metrics, traction, or unsupported product claims. |
-| Cursor | Local app iteration, UI cleanup, analyzer/preview/route work, manual QA via `npm run dev`. | One issue / one branch / one PR. |
+| Codex | Scoped issue work, docs, checklists, available checks, PR summaries. | Do not invent metrics, traction, or unsupported product claims. Avoid forbidden phrases (WCAG compliant / accessibility auditor / axe alternative / etc.). |
+| Cursor | Local app iteration, UI cleanup, analyzer/preview/route work, positioning copy, manual QA via `npm run dev`. | One issue / one branch / one PR. |
 | Sherv | Prioritize Linear, approve merges, local QA, launch messaging and timing. | Keep Linear statuses aligned with this dashboard. |
 
 ## Definition of done

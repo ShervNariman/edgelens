@@ -21,9 +21,9 @@ const plexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "EdgeLens — Audit shadcn edge states & a11y",
+  title: "EdgeLens — Pre-flight for React/shadcn UI states",
   description:
-    "Rule-based auditor for AI-generated shadcn/React components. Catch missing interaction states and accessibility gaps before they ship.",
+    "Local deterministic pre-flight checker for generated React/shadcn UI. Catch missing loading, empty, error, disabled, and focus states — plus common shadcn/Radix accessibility gotchas — before components ship.",
 };
 
 export default function RootLayout({

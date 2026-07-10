@@ -1,8 +1,10 @@
 # EdgeLens
 
-Rule-based, client-side web app (Next.js 15 / React 19 / TypeScript) that audits React UI
-components for interaction states and accessibility issues. No backend, no database, no LLM,
-no environment variables/secrets.
+Rule-based, client-side web app (Next.js 15 / React 19 / TypeScript) that runs pre-flight
+checks on AI-generated React/shadcn components — state completeness first, with supporting
+shadcn/Radix accessibility risk detection. No backend, no database, no LLM, no environment
+variables/secrets. Not a broad accessibility auditor, WCAG checker, Storybook replacement,
+or axe alternative.
 
 ## Ops / manager loop
 

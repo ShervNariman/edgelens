@@ -111,7 +111,7 @@ export function PreviewPane({
       hasLoadingProp: false,
       placeholder: "Select an option",
       title: componentName ?? "Component preview",
-      description: "Simulated shadcn preview — force states below.",
+      description: "Simulated preview — force the states AI often skips.",
       missingStates: [],
       a11yIssues: [],
       detectedNames: detectedComponents.map((c) => c.name),
@@ -158,7 +158,7 @@ export function PreviewPane({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Live preview
+            Forced state preview
           </p>
           <p className="truncate font-mono text-sm text-foreground">
             {meta.componentName ?? "AnonymousComponent"}
@@ -289,7 +289,7 @@ export function PreviewPane({
         {meta.a11yIssues.length > 0 && hasCode && (
           <div
             className="pointer-events-none z-10 mb-4 flex w-full flex-wrap gap-1.5"
-            aria-label="Accessibility issues in preview"
+            aria-label="Supporting accessibility risks in preview"
           >
             {meta.a11yIssues.slice(0, 2).map((issue) => (
               <span
@@ -305,7 +305,7 @@ export function PreviewPane({
         <div className="flex flex-1 items-center justify-center">
           {!hasCode ? (
             <p className="text-center text-sm text-muted-foreground">
-              Paste code and analyze to simulate states.
+              Paste code and analyze, then force states the happy path hid.
             </p>
           ) : (
             <div
