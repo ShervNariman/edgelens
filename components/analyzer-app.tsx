@@ -212,7 +212,7 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
                   <span
                     className={
                       report.summary.score >= 50
-                        ? "text-amber-400"
+                        ? "text-amber-600"
                         : "text-destructive"
                     }
                   >
