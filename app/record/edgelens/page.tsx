@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AnalyzerApp } from "@/components/analyzer-app";
+import { RecordingAnalyzer } from "@/components/recording-analyzer";
 
 // Quiet route for launch-asset screen recording — not a separate product flow.
 // Opens EdgeLens with chrome stripped and the strongest demo pre-analyzed.
@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   },
 };
 
+/** Force static generation so the page module is always emitted into the build manifest. */
+export const dynamic = "force-static";
+
 export default function EdgeLensRecordPage() {
-  return <AnalyzerApp mode="recording" />;
+  return <RecordingAnalyzer />;
 }
