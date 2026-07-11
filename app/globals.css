@@ -8,8 +8,8 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-heading: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,73 +48,118 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+  Release Room token architecture (SHE-72).
+  Light is the shipped experience; .dark mirrors the same semantic slots
+  so a future theme toggle does not require a redesign.
+*/
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --rr-ink: #121826;
+  --rr-paper: #f2f4f7;
+  --rr-surface: #ffffff;
+  --rr-surface-raised: #fbfcfd;
+  --rr-muted: #5a6476;
+  --rr-muted-soft: #8a93a5;
+  --rr-line: #d6dce7;
+  --rr-line-strong: #b8c0cf;
+  --rr-focus: #2f6fed;
+  --rr-focus-ring: color-mix(in srgb, var(--rr-focus) 35%, transparent);
+  --rr-blocked: #b42318;
+  --rr-blocked-bg: #fcebea;
+  --rr-warn: #9a6700;
+  --rr-warn-bg: #fff4d6;
+  --rr-ready: #0f6b45;
+  --rr-ready-bg: #e4f5ec;
+  --rr-info: #1d4f91;
+  --rr-info-bg: #e8f0fb;
+  --rr-sidebar-width: 15.5rem;
+  --rr-topbar-height: 3.5rem;
+
+  --background: var(--rr-paper);
+  --foreground: var(--rr-ink);
+  --card: var(--rr-surface);
+  --card-foreground: var(--rr-ink);
+  --popover: var(--rr-surface);
+  --popover-foreground: var(--rr-ink);
+  --primary: var(--rr-ink);
+  --primary-foreground: #f7f8fa;
+  --secondary: #e7ebf2;
+  --secondary-foreground: var(--rr-ink);
+  --muted: #e7ebf2;
+  --muted-foreground: var(--rr-muted);
+  --accent: #e7ebf2;
+  --accent-foreground: var(--rr-ink);
+  --destructive: var(--rr-blocked);
+  --border: var(--rr-line);
+  --input: var(--rr-line);
+  --ring: var(--rr-focus);
+  --chart-1: #2f6fed;
+  --chart-2: #0f6b45;
+  --chart-3: #9a6700;
+  --chart-4: #b42318;
+  --chart-5: #5a6476;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #eef1f5;
+  --sidebar-foreground: var(--rr-ink);
+  --sidebar-primary: var(--rr-ink);
+  --sidebar-primary-foreground: #f7f8fa;
+  --sidebar-accent: #e2e7ef;
+  --sidebar-accent-foreground: var(--rr-ink);
+  --sidebar-border: var(--rr-line);
+  --sidebar-ring: var(--rr-focus);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --rr-ink: #f2f4f8;
+  --rr-paper: #0e121a;
+  --rr-surface: #171c27;
+  --rr-surface-raised: #1d2431;
+  --rr-muted: #9aa3b5;
+  --rr-muted-soft: #6f788a;
+  --rr-line: #2a3344;
+  --rr-line-strong: #3d485c;
+  --rr-focus: #6b9cff;
+  --rr-focus-ring: color-mix(in srgb, var(--rr-focus) 40%, transparent);
+  --rr-blocked: #ff8a80;
+  --rr-blocked-bg: #3a1c1a;
+  --rr-warn: #f0c674;
+  --rr-warn-bg: #3a2e14;
+  --rr-ready: #6dcea0;
+  --rr-ready-bg: #163428;
+  --rr-info: #8eb6f5;
+  --rr-info-bg: #1a2a42;
+
+  --background: var(--rr-paper);
+  --foreground: var(--rr-ink);
+  --card: var(--rr-surface);
+  --card-foreground: var(--rr-ink);
+  --popover: var(--rr-surface);
+  --popover-foreground: var(--rr-ink);
+  --primary: var(--rr-ink);
+  --primary-foreground: #0e121a;
+  --secondary: #222a38;
+  --secondary-foreground: var(--rr-ink);
+  --muted: #222a38;
+  --muted-foreground: var(--rr-muted);
+  --accent: #222a38;
+  --accent-foreground: var(--rr-ink);
+  --destructive: var(--rr-blocked);
+  --border: var(--rr-line);
+  --input: var(--rr-line);
+  --ring: var(--rr-focus);
+  --chart-1: #6b9cff;
+  --chart-2: #6dcea0;
+  --chart-3: #f0c674;
+  --chart-4: #ff8a80;
+  --chart-5: #9aa3b5;
+  --sidebar: #131822;
+  --sidebar-foreground: var(--rr-ink);
+  --sidebar-primary: var(--rr-ink);
+  --sidebar-primary-foreground: #0e121a;
+  --sidebar-accent: #1d2431;
+  --sidebar-accent-foreground: var(--rr-ink);
+  --sidebar-border: var(--rr-line);
+  --sidebar-ring: var(--rr-focus);
 }
 
 @layer base {
@@ -128,23 +173,74 @@
   body {
     @apply bg-background text-foreground;
   }
+  :focus-visible {
+    outline: 2px solid var(--rr-focus);
+    outline-offset: 2px;
+  }
+  .rr-shell :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--rr-surface), 0 0 0 4px var(--rr-focus);
+  }
 }
 
-/* Subtle light atmosphere for MVP (dark mode disabled) */
+/* Cool grid atmosphere — light shipped look */
 body {
+  background-color: var(--rr-paper);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, oklch(0.92 0.03 160 / 0.55), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 100%, oklch(0.94 0.02 200 / 0.4), transparent);
+    linear-gradient(180deg, color-mix(in srgb, var(--rr-ink) 4%, transparent), transparent 28%),
+    linear-gradient(color-mix(in srgb, var(--rr-ink) 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--rr-ink) 3.5%, transparent) 1px, transparent 1px);
+  background-size: auto, 28px 28px, 28px 28px;
   background-attachment: fixed;
 }
 
-@keyframes edgelens-preview-in {
+.rr-shell {
+  --rr-card-shadow: 0 1px 0 color-mix(in srgb, var(--rr-ink) 4%, transparent),
+    0 12px 32px -24px color-mix(in srgb, var(--rr-ink) 35%, transparent);
+}
+
+.rr-card {
+  background: var(--rr-surface);
+  border: 1px solid var(--rr-line);
+  border-radius: 0.875rem;
+  box-shadow: var(--rr-card-shadow);
+}
+
+.rr-header {
+  background: color-mix(in srgb, var(--rr-paper) 82%, var(--rr-surface));
+  backdrop-filter: blur(12px);
+}
+
+.rr-sidebar {
+  background: color-mix(in srgb, var(--sidebar) 92%, var(--rr-surface));
+  border-right: 1px solid var(--sidebar-border);
+}
+
+.rr-hero {
+  box-shadow: 0 24px 60px -36px color-mix(in srgb, var(--rr-ink) 55%, transparent);
+}
+
+.rr-recording .rr-sidebar,
+.rr-recording .rr-mobile-nav,
+.rr-recording .rr-skip {
+  display: none !important;
+}
+
+.rr-recording .rr-main-frame {
+  margin-left: 0 !important;
+}
+
+@keyframes rr-toast-in {
   from {
-    opacity: 0.55;
-    transform: translateY(6px) scale(0.98);
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+.rr-toast {
+  animation: rr-toast-in 0.22s ease-out;
 }

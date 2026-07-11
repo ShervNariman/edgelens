@@ -1,30 +1,32 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, IBM_Plex_Sans } from "next/font/google";
-import { PostHogAnalytics } from "@/components/analytics/posthog-analytics";
+import { Fraunces, Manrope, IBM_Plex_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ReleaseRoomProvider } from "@/lib/release-demo/store";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const display = Fraunces({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const plexSans = IBM_Plex_Sans({
+const sans = Manrope({
   variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
+const mono = IBM_Plex_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
+
 export const metadata: Metadata = {
-  title: "EdgeLens — Pre-flight for React/shadcn UI states",
+  title: "Release Room — Evidence-backed go / no-go",
   description:
-    "Local deterministic pre-flight checker for generated React/shadcn UI. Catch missing loading, empty, error, disabled, and focus states — plus common shadcn/Radix accessibility gotchas — before components ship.",
+    "Private MVP release dashboard: see why a release is blocked in seconds, capture evidence, and approve, block, or waive with an audit trail.",
 };
 
 export default function RootLayout({
@@ -35,20 +37,19 @@ export default function RootLayout({
   return (
     <html lang="en" className="light" suppressHydrationWarning>
       <body
-        className={`${plexSans.variable} ${geistSans.variable} ${geistMono.variable} min-h-screen font-sans antialiased`}
+        className={`${display.variable} ${sans.variable} ${mono.variable} min-h-screen font-sans antialiased`}
       >
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
           forcedTheme="light"
           enableSystem={false}
+          disableTransitionOnChange
         >
-          <TooltipProvider>{children}</TooltipProvider>
+          <TooltipProvider>
+            <ReleaseRoomProvider>{children}</ReleaseRoomProvider>
+          </TooltipProvider>
         </ThemeProvider>
-        <PostHogAnalytics
-          product="edgelens"
-          excludeRoutes={["/record"]}
-        />
       </body>
     </html>
   );
