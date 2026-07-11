@@ -21,7 +21,9 @@ npm run capture:screenshots
 
 Outputs land in [`marketing/screenshots/exported/`](marketing/screenshots/exported/). Checklist: [`marketing/screenshots/README.md`](marketing/screenshots/README.md).
 
-![EdgeLens screenshot placeholder](docs/screenshot-placeholder.svg)
+![EdgeLens BLOCKED release room](marketing/screenshots/exported/03-blocked-overview.png)
+
+![EdgeLens READY release room](marketing/screenshots/exported/05-ready-overview.png)
 
 ## Why EdgeLens exists
 

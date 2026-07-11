@@ -120,31 +120,40 @@ export function AnalyzerApp({
     });
   }, []);
 
-  // Recording route: auto-analyze the preloaded demo once on mount (client-only).
+  // Recording route: auto-analyze the seeded fixture once (client-only).
+  // Use a cancelled flag so React Strict Mode cleanup does not leave
+  // isAnalyzing stuck true after clearing the pending timer.
   useEffect(() => {
     if (!isRecording || autoAnalyzedRef.current) return;
     if (!code.trim()) return;
-    autoAnalyzedRef.current = true;
 
+    let cancelled = false;
     setIsAnalyzing(true);
     setError(null);
     setPendingAxe(false);
 
     const timer = window.setTimeout(() => {
+      if (cancelled) return;
       try {
         const next = analyzeComponent(code);
+        if (cancelled) return;
         setReport(next);
         setForcedState(recordingScenario.forcedState ?? "default");
         setPendingAxe(true);
+        autoAnalyzedRef.current = true;
       } catch (err) {
+        if (cancelled) return;
         setError(err instanceof Error ? err.message : "Analysis failed");
         setReport(null);
       } finally {
-        setIsAnalyzing(false);
+        if (!cancelled) setIsAnalyzing(false);
       }
     }, 120);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [isRecording, code, recordingScenario.forcedState]);
 
   return (
@@ -305,6 +314,16 @@ export function AnalyzerApp({
                 selectedExample={selectedExample}
                 onSelectExample={handleSelectExample}
                 compact={isRecording}
+                examples={
+                  isRecording
+                    ? [
+                        recordingScenario.example,
+                        ...CODE_EXAMPLES.filter(
+                          (ex) => ex.id !== recordingScenario.example.id
+                        ),
+                      ]
+                    : CODE_EXAMPLES
+                }
               />
             </section>
 

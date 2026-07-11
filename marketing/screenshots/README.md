@@ -14,14 +14,14 @@ Named stills for EdgeLens launch evidence. Prefer Playwright automation; fall ba
 
 | ID | Filename | Route | Notes | Status |
 | --- | --- | --- | --- | --- |
-| S1 | `01-hero-landing.png` | `/` | Brand-first hero, first viewport | pending |
-| S2 | `02-analyzer-default.png` | `/analyzer` | Default analyzer chrome | pending |
-| S3 | `03-blocked-overview.png` | `/record/release-room?scenario=blocked` | BLOCKED badge + findings | pending |
-| S4 | `04-blocked-forced-error.png` | same (error forced) | Forced error state in preview | pending |
-| S5 | `05-ready-overview.png` | `/record/release-room?scenario=ready` | READY badge + high score | pending |
-| S6 | `06-states-tab.png` | blocked scenario | State completeness layer visible | pending |
-| S7 | `07-fixes-panel.png` | blocked scenario | Rule-based fix templates | pending |
-| S8 | `08-demo-story.png` | `/record/release-room?scenario=demo` | Launch story frame | pending |
+| S1 | `01-hero-landing.png` | `/` | Brand-first hero, first viewport | captured |
+| S2 | `02-analyzer-default.png` | `/analyzer` | Analyzer after Analyze click | captured |
+| S3 | `03-blocked-overview.png` | `/record/release-room?scenario=blocked` | BLOCKED badge + findings | captured |
+| S4 | `04-blocked-forced-loading.png` | same (loading forced in script) | Forced loading state in preview | captured |
+| S5 | `05-ready-overview.png` | `/record/release-room?scenario=ready` | READY badge + high score | captured |
+| S6 | `06-states-tab.png` | blocked scenario | State completeness layer visible | captured |
+| S7 | `07-fixes-panel.png` | blocked scenario | Rule-based fix templates | captured |
+| S8 | `08-demo-story.png` | `/record/release-room?scenario=demo` | Launch story frame | captured |
 
 ## Automate
 

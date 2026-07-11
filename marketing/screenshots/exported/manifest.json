@@ -1,0 +1,51 @@
+{
+  "generatedAt": "2026-07-11T04:31:33.061Z",
+  "baseUrl": "http://localhost:3000",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "shots": [
+    {
+      "id": "S1",
+      "file": "01-hero-landing.png",
+      "url": "http://localhost:3000/"
+    },
+    {
+      "id": "S2",
+      "file": "02-analyzer-default.png",
+      "url": "http://localhost:3000/analyzer"
+    },
+    {
+      "id": "S3",
+      "file": "03-blocked-overview.png",
+      "url": "http://localhost:3000/record/release-room?scenario=blocked"
+    },
+    {
+      "id": "S4",
+      "file": "04-blocked-forced-loading.png",
+      "url": "http://localhost:3000/record/release-room?scenario=blocked"
+    },
+    {
+      "id": "S5",
+      "file": "05-ready-overview.png",
+      "url": "http://localhost:3000/record/release-room?scenario=ready"
+    },
+    {
+      "id": "S6",
+      "file": "06-states-tab.png",
+      "url": "http://localhost:3000/record/release-room?scenario=blocked"
+    },
+    {
+      "id": "S7",
+      "file": "07-fixes-panel.png",
+      "url": "http://localhost:3000/record/release-room?scenario=blocked"
+    },
+    {
+      "id": "S8",
+      "file": "08-demo-story.png",
+      "url": "http://localhost:3000/record/release-room?scenario=demo"
+    }
+  ],
+  "note": "Seeded fixtures only. No secrets or customer data."
+}

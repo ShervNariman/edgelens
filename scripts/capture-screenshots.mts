@@ -50,7 +50,7 @@ const SHOTS: Shot[] = [
   },
   {
     id: "S4",
-    filename: "04-blocked-forced-error.png",
+    filename: "04-blocked-forced-loading.png",
     path: "/record/release-room?scenario=blocked",
     waitFor: "analysis",
   },
@@ -81,9 +81,17 @@ const SHOTS: Shot[] = [
 ];
 
 async function waitForAnalysis(page: Page): Promise<void> {
-  await page.waitForSelector('[data-capture-badge="score"]', {
-    timeout: 20_000,
-  });
+  const score = page.locator('[data-capture-badge="score"]');
+  try {
+    await score.waitFor({ state: "visible", timeout: 8_000 });
+  } catch {
+    // Auto-analyze may still be pending — click Analyze as a fallback.
+    const analyze = page.getByRole("button", { name: /analyze/i });
+    if (await analyze.count()) {
+      await analyze.first().click();
+    }
+    await score.waitFor({ state: "visible", timeout: 20_000 });
+  }
   // Allow preview / axe merge to settle.
   await page.waitForTimeout(800);
 }
@@ -106,6 +114,22 @@ async function openStatesTab(page: Page): Promise<void> {
   if (await states.count()) {
     await states.first().click();
     await page.waitForTimeout(300);
+  }
+}
+
+async function forcePreviewState(page: Page, state: string): Promise<void> {
+  const btn = page.getByRole("button", { name: new RegExp(`^${state}$`, "i") });
+  if (await btn.count()) {
+    await btn.first().click();
+    await page.waitForTimeout(400);
+  }
+}
+
+async function runAnalyzer(page: Page): Promise<void> {
+  const analyze = page.getByRole("button", { name: /analyze/i });
+  if (await analyze.count()) {
+    await analyze.first().click();
+    await page.waitForTimeout(1200);
   }
 }
 
@@ -133,6 +157,12 @@ async function main(): Promise<void> {
       await waitForHero(page);
     }
 
+    if (shot.id === "S2") {
+      await runAnalyzer(page);
+    }
+    if (shot.id === "S4") {
+      await forcePreviewState(page, "loading");
+    }
     if (shot.id === "S6") {
       await openStatesTab(page);
     }

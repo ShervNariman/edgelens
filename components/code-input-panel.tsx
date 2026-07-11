@@ -15,8 +15,10 @@ interface CodeInputPanelProps {
   isAnalyzing: boolean;
   selectedExample: CodeExample | null;
   onSelectExample: (example: CodeExample) => void;
-  /** Tighter layout for /record/edgelens capture frames. */
+  /** Tighter layout for /record/* capture frames. */
   compact?: boolean;
+  /** Override example chips (recording scenarios may include READY fixture). */
+  examples?: CodeExample[];
 }
 
 export function CodeInputPanel({
@@ -27,6 +29,7 @@ export function CodeInputPanel({
   selectedExample,
   onSelectExample,
   compact = false,
+  examples = CODE_EXAMPLES,
 }: CodeInputPanelProps) {
   return (
     <div className={cn("flex h-full flex-col", compact ? "gap-2.5" : "gap-3")}>
@@ -36,7 +39,7 @@ export function CodeInputPanel({
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
           {compact
-            ? "Preloaded launch demo — swap examples anytime."
+            ? "Seeded capture fixture — swap examples anytime."
             : "Intentionally imperfect AI-style shadcn components — load one, then Analyze."}
         </p>
       </div>
@@ -47,7 +50,7 @@ export function CodeInputPanel({
           compact ? "sm:grid-cols-1" : "sm:grid-cols-1"
         )}
       >
-        {CODE_EXAMPLES.map((example) => {
+        {examples.map((example) => {
           const active = selectedExample?.id === example.id;
           return (
             <button
