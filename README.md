@@ -8,7 +8,18 @@ EdgeLens helps catch missing loading, empty, error, disabled, focus, active, and
 
 **MVP status:** EdgeLens is a rule-based pre-flight checker for local design and engineering review. It can miss issues and produce false positives. It does not certify WCAG compliance or replace manual keyboard testing, screen-reader testing, axe, Storybook, or full QA.
 
-## Screenshot placeholder
+## Screenshots
+
+Automated stills (seeded fixtures only):
+
+```bash
+npm run dev
+# other terminal:
+npx playwright install chromium   # once
+npm run capture:screenshots
+```
+
+Outputs land in [`marketing/screenshots/exported/`](marketing/screenshots/exported/). Checklist: [`marketing/screenshots/README.md`](marketing/screenshots/README.md).
 
 ![EdgeLens screenshot placeholder](docs/screenshot-placeholder.svg)
 
@@ -72,18 +83,28 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## Local development commands
 
 ```bash
-npm run dev       # Start the Next.js dev server with Turbopack
-npm run lint      # Run ESLint
-npm run typecheck # Run TypeScript without emitting files
-npm run build     # Build the production app with Turbopack
-npm run start     # Serve a completed production build
+npm run dev              # Start the Next.js dev server with Turbopack
+npm run lint             # Run ESLint
+npm run typecheck        # Run TypeScript without emitting files
+npm run build            # Build the production app with Turbopack
+npm run start            # Serve a completed production build
+npm run smoke:examples   # Analyze built-in examples in Node
+npm run capture:screenshots  # Playwright stills (dev server required)
 ```
 
-A manual smoke script also exists for the built-in examples:
+## Demo flow (marketers & launch capture)
 
-```bash
-npx tsx scripts/smoke-examples.mts
-```
+1. `npm install && npm run dev`
+2. Open the **release room** (chrome-stripped, auto-analyzed):
+   - BLOCKED: [http://localhost:3000/record/release-room?scenario=blocked](http://localhost:3000/record/release-room?scenario=blocked)
+   - READY: [http://localhost:3000/record/release-room?scenario=ready](http://localhost:3000/record/release-room?scenario=ready)
+   - Demo story: [http://localhost:3000/record/release-room?scenario=demo](http://localhost:3000/record/release-room?scenario=demo)
+3. Record using [`marketing/video/SHOT-LIST.md`](marketing/video/SHOT-LIST.md) and [`marketing/video/NARRATION.md`](marketing/video/NARRATION.md).
+4. Or regenerate stills with `npm run capture:screenshots`.
+
+Index of capture routes: [http://localhost:3000/record](http://localhost:3000/record).
+
+Fixtures are deterministic and local — never commit secrets, private customer data, or raw credentials.
 
 ## Typical workflow
 
@@ -101,6 +122,7 @@ npx tsx scripts/smoke-examples.mts
 - shadcn/ui and Radix-style primitives
 - `@babel/parser` for static source parsing
 - `axe-core` for preview DOM checks where available
+- Playwright (dev) for marketing screenshot automation
 
 ## Architecture
 
@@ -114,6 +136,18 @@ At a high level:
 - **Results:** Findings are grouped by state completeness, static JSX/shadcn checks, preview DOM checks, and rule-based fixes.
 - **Fix templates:** Suggested fixes are deterministic snippets or explanations tied to rules, not generated source diffs.
 
+Deeper rationale: [`docs/ARM.md`](docs/ARM.md). Build decisions and milestones: [`docs/BUILD-JOURNAL.md`](docs/BUILD-JOURNAL.md). Launch copy: [`docs/launch.md`](docs/launch.md).
+
+## Marketing evidence layout
+
+| Path | Contents |
+| --- | --- |
+| `marketing/screenshots/` | Capture checklist + exported stills |
+| `marketing/video/` | Shot list, narration, raw/edited folders |
+| `marketing/posts/` | Progress drafts + launch thread |
+| `docs/ARM.md` | Architecture & rationale memorandum |
+| `docs/BUILD-JOURNAL.md` | Decisions, failures, workarounds, milestones |
+
 ## Roadmap
 
 Near-term (in scope for the MVP wedge):
@@ -123,6 +157,7 @@ Near-term (in scope for the MVP wedge):
 - Add more built-in examples that represent realistic product components.
 - Expand fix templates with before/after examples.
 - Improve preview-state controls for common component variants.
+- Human-approve launch stills and the 45s demo recording.
 
 Saved for later (out of MVP scope):
 

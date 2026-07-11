@@ -16,38 +16,41 @@ import { SiteFooter } from "@/components/site-footer";
 import { PreviewErrorBoundary } from "@/components/preview-error-boundary";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { cn } from "@/lib/utils";
+import { HERO_SUPPORT, LIMITATION_COPY } from "@/lib/product-copy";
 import {
-  DEMO_STORY,
-  HERO_SUPPORT,
-  LIMITATION_COPY,
-} from "@/lib/product-copy";
-
-/** Launch demo: happy-path form that forgets loading/error/disabled states. */
-const RECORDING_EXAMPLE_ID = "login-form";
+  getRecordingScenario,
+  type RecordingScenarioId,
+} from "@/lib/recording-scenarios";
 
 export interface AnalyzerAppProps {
   /**
-   * `recording` strips chrome and auto-loads the launch demo for
-   * /record/edgelens screen-capture. Default preserves /analyzer.
+   * `recording` strips chrome and auto-loads a seeded scenario for
+   * /record/* screen-capture. Default preserves /analyzer.
    */
   mode?: "default" | "recording";
+  /** Seeded capture scenario — only used when mode is `recording`. */
+  scenario?: RecordingScenarioId;
 }
 
-function resolveInitialExample(mode: "default" | "recording"): CodeExample {
+function resolveInitialExample(
+  mode: "default" | "recording",
+  scenarioId: RecordingScenarioId
+): CodeExample {
   if (mode === "recording") {
-    return (
-      CODE_EXAMPLES.find((ex) => ex.id === RECORDING_EXAMPLE_ID) ??
-      CODE_EXAMPLES[0]
-    );
+    return getRecordingScenario(scenarioId).example;
   }
   return CODE_EXAMPLES[0];
 }
 
-export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
+export function AnalyzerApp({
+  mode = "default",
+  scenario = "demo",
+}: AnalyzerAppProps) {
   const isRecording = mode === "recording";
+  const recordingScenario = getRecordingScenario(scenario);
   const analyzerRef = useRef<HTMLElement>(null);
   const autoAnalyzedRef = useRef(false);
-  const initialExample = resolveInitialExample(mode);
+  const initialExample = resolveInitialExample(mode, scenario);
 
   const [code, setCode] = useState(initialExample.code);
   const [selectedExample, setSelectedExample] = useState<CodeExample | null>(
@@ -55,7 +58,11 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
   );
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [forcedState, setForcedState] = useState<ComponentState>("default");
+  const [forcedState, setForcedState] = useState<ComponentState>(
+    isRecording && recordingScenario.forcedState
+      ? recordingScenario.forcedState
+      : "default"
+  );
   const [pendingAxe, setPendingAxe] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -127,7 +134,7 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
       try {
         const next = analyzeComponent(code);
         setReport(next);
-        setForcedState("default");
+        setForcedState(recordingScenario.forcedState ?? "default");
         setPendingAxe(true);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Analysis failed");
@@ -138,11 +145,16 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
     }, 120);
 
     return () => window.clearTimeout(timer);
-  }, [isRecording, code]);
+  }, [isRecording, code, recordingScenario.forcedState]);
 
   return (
     <ErrorBoundary fallbackTitle="EdgeLens hit a runtime error">
       <div
+        data-capture-root={isRecording ? "true" : undefined}
+        data-capture-scenario={isRecording ? recordingScenario.id : undefined}
+        data-capture-decision={
+          isRecording ? recordingScenario.decision : undefined
+        }
         className={cn(
           "min-h-screen bg-background text-foreground",
           isRecording &&
@@ -156,12 +168,25 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
                 <span className="text-emerald-400">›</span>
                 <span>edgelens</span>
                 <span className="hidden text-muted-foreground/70 sm:inline">
-                  · record
+                  · release room
                 </span>
               </div>
-              <p className="font-mono text-[10px] text-muted-foreground/80">
-                launch capture
-              </p>
+              <div className="flex items-center gap-2">
+                <span
+                  data-capture-badge="decision"
+                  className={cn(
+                    "rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wide",
+                    recordingScenario.decision === "READY"
+                      ? "bg-emerald-500/15 text-emerald-600"
+                      : "bg-destructive/15 text-destructive"
+                  )}
+                >
+                  {recordingScenario.decision}
+                </span>
+                <p className="font-mono text-[10px] text-muted-foreground/80">
+                  capture · {recordingScenario.id}
+                </p>
+              </div>
             </div>
           </header>
         ) : (
@@ -198,30 +223,39 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div className="space-y-1">
                 <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-emerald-400/90">
-                  happy path → force states → gaps → fixes
+                  {recordingScenario.decision === "READY"
+                    ? "states present → pre-flight clear"
+                    : "happy path → force states → gaps → fixes"}
                 </p>
                 <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
-                  EdgeLens
+                  {recordingScenario.title}
                 </h1>
                 <p className="max-w-2xl text-sm text-muted-foreground">
-                  {DEMO_STORY}
+                  {recordingScenario.subtitle}
                 </p>
               </div>
               {report && (
-                <div className="rounded-lg border border-border/60 bg-card/40 px-3 py-2 font-mono text-[11px] text-muted-foreground">
+                <div
+                  data-capture-badge="score"
+                  className="rounded-lg border border-border/60 bg-card/40 px-3 py-2 font-mono text-[11px] text-muted-foreground"
+                >
                   <span className="text-foreground">{report.componentName}</span>
                   <span className="mx-1.5 text-border">·</span>
                   <span>{report.primaryType}</span>
                   <span className="mx-1.5 text-border">·</span>
                   <span
                     className={
-                      report.summary.score >= 50
-                        ? "text-amber-400"
-                        : "text-destructive"
+                      recordingScenario.decision === "READY"
+                        ? "text-emerald-600"
+                        : report.summary.score >= 50
+                          ? "text-amber-500"
+                          : "text-destructive"
                     }
                   >
                     score {report.summary.score}
                   </span>
+                  <span className="mx-1.5 text-border">·</span>
+                  <span>{report.summary.totalIssues} issues</span>
                 </div>
               )}
             </div>

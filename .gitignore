@@ -39,3 +39,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# marketing capture binaries / scratch (keep README + checklist docs)
+marketing/video/raw/*
+!marketing/video/raw/.gitkeep.md
+marketing/video/edited/*
+!marketing/video/edited/.gitkeep.md
+marketing/screenshots/raw/*
+!marketing/screenshots/raw/.gitkeep.md
+*.mp4
+*.mov
+*.webm
+playwright-report/
+test-results/
