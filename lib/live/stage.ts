@@ -89,11 +89,34 @@ export function deriveReleaseStages(evidence: EvidenceItem[]): {
     return { stages, current: blocked };
   }
 
-  const pending = stages.find(
-    (s) => s.id !== "decision" && (s.state === "pending" || s.state === "empty"),
-  );
+  const pending = stages.find((s) => s.id !== "decision" && s.state === "pending");
   if (pending) {
     return { stages, current: pending };
+  }
+
+  // Empty stages pin current only when no later stage has evidence yet.
+  // Optional mid gaps (empty between covered stages) do not block Decision.
+  let lastWithEvidence = -1;
+  for (let i = stages.length - 1; i >= 0; i -= 1) {
+    const stage = stages[i];
+    if (stage && stage.id !== "decision" && stage.evidenceCount > 0) {
+      lastWithEvidence = i;
+      break;
+    }
+  }
+
+  const nextEmpty = stages.find(
+    (s, index) => s.id !== "decision" && s.state === "empty" && index > lastWithEvidence,
+  );
+  if (nextEmpty) {
+    return { stages, current: nextEmpty };
+  }
+
+  if (lastWithEvidence < 0) {
+    const empty = stages.find((s) => s.id !== "decision" && s.state === "empty");
+    if (empty) {
+      return { stages, current: empty };
+    }
   }
 
   const decision = stages.find((s) => s.id === "decision") ?? stages.at(-1)!;

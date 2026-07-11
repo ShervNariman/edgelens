@@ -15,12 +15,13 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "npm run dev",
+    command: `npm run dev -- --port ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     env: {
       ...process.env,
+      PORT: String(PORT),
       DATABASE_ADAPTER: "local",
       DATA_DIR: ".data/e2e",
       OWNER_EMAIL: "owner@release-room.local",

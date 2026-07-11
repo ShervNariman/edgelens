@@ -90,28 +90,15 @@ export function LiveFreshnessBar({
           variant="secondary"
           onClick={onRefresh}
           disabled={refreshing}
-          aria-label="Refresh live snapshot now"
         >
           {refreshing ? "Refreshing…" : "Refresh now"}
         </Button>
         {paused ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="primary"
-            onClick={onResume}
-            aria-label="Resume automatic live refresh"
-          >
+          <Button type="button" size="sm" variant="primary" onClick={onResume}>
             Resume
           </Button>
         ) : (
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={onPause}
-            aria-label="Pause automatic live refresh"
-          >
+          <Button type="button" size="sm" variant="ghost" onClick={onPause}>
             Pause
           </Button>
         )}

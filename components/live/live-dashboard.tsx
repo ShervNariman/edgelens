@@ -170,7 +170,6 @@ export function LiveDashboard({
               variant="secondary"
               onClick={simulateEditorEvent}
               disabled={demoPending}
-              aria-label="Simulate editor evidence event for live rail"
             >
               {demoPending ? "Ingesting…" : "Simulate editor event"}
             </Button>

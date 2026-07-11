@@ -49,6 +49,16 @@ describe("deriveReleaseStages", () => {
     expect(current.id).toBe("decision");
     expect(current.state).toBe("pass");
   });
+
+  it("skips empty mid stages when later evidence already exists", () => {
+    const { current } = deriveReleaseStages([
+      evidence({ id: "1", source: "linear", status: "pass" }),
+      evidence({ id: "2", source: "github", status: "pass" }),
+      evidence({ id: "3", source: "vercel", status: "pass" }),
+    ]);
+    expect(current.id).toBe("decision");
+    expect(current.state).toBe("pass");
+  });
 });
 
 describe("computeKpis", () => {
