@@ -1,5 +1,10 @@
-import { AnalyzerApp } from "@/components/analyzer-app";
+import { ReleaseDashboard } from "@/components/release-room/release-dashboard";
+import { ReleaseShell } from "@/components/release-room/release-shell";
 
 export default function Home() {
-  return <AnalyzerApp />;
+  return (
+    <ReleaseShell>
+      <ReleaseDashboard />
+    </ReleaseShell>
+  );
 }

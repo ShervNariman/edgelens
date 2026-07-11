@@ -8,8 +8,8 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-heading: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,24 +49,38 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* Release Room signal palette — cool paper + ink, not purple/cream clichés */
+  --rr-ink: #121826;
+  --rr-paper: #f3f5f8;
+  --rr-surface: #ffffff;
+  --rr-muted: #5c6578;
+  --rr-line: #d5dbe6;
+  --rr-focus: #2f6fed;
+  --rr-blocked: #b42318;
+  --rr-blocked-bg: #fcebea;
+  --rr-warn: #9a6700;
+  --rr-warn-bg: #fff4d6;
+  --rr-ready: #0f6b45;
+  --rr-ready-bg: #e4f5ec;
+
+  --background: var(--rr-paper);
+  --foreground: var(--rr-ink);
+  --card: var(--rr-surface);
+  --card-foreground: var(--rr-ink);
+  --popover: var(--rr-surface);
+  --popover-foreground: var(--rr-ink);
+  --primary: var(--rr-ink);
+  --primary-foreground: var(--rr-paper);
+  --secondary: #e8ecf2;
+  --secondary-foreground: var(--rr-ink);
+  --muted: #e8ecf2;
+  --muted-foreground: var(--rr-muted);
+  --accent: #e8ecf2;
+  --accent-foreground: var(--rr-ink);
+  --destructive: var(--rr-blocked);
+  --border: var(--rr-line);
+  --input: var(--rr-line);
+  --ring: var(--rr-focus);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -102,19 +116,6 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
 }
 
 @layer base {
@@ -130,21 +131,22 @@
   }
 }
 
-/* Subtle light atmosphere for MVP (dark mode disabled) */
+/* Cool grid atmosphere for Release Room */
 body {
+  background-color: var(--rr-paper);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, oklch(0.92 0.03 160 / 0.55), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 100%, oklch(0.94 0.02 200 / 0.4), transparent);
+    linear-gradient(180deg, rgba(18, 24, 38, 0.03), transparent 28%),
+    linear-gradient(rgba(18, 24, 38, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18, 24, 38, 0.035) 1px, transparent 1px);
+  background-size: auto, 28px 28px, 28px 28px;
   background-attachment: fixed;
 }
 
-@keyframes edgelens-preview-in {
-  from {
-    opacity: 0.55;
-    transform: translateY(6px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.rr-header {
+  background: color-mix(in srgb, var(--rr-paper) 88%, white);
+  backdrop-filter: blur(10px);
+}
+
+.rr-hero {
+  box-shadow: 0 24px 60px -36px rgba(18, 24, 38, 0.55);
 }
