@@ -8,7 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
-    "test:integrations": "tsx --test lib/release-room/integrations/**/*.test.ts"
+    "test:integrations": "tsx --test lib/release-room/integrations/integrations.test.ts lib/release-room/integrations/provider-webhooks.test.ts"
   },
   "dependencies": {
     "@babel/parser": "^8.0.4",

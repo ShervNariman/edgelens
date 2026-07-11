@@ -119,6 +119,9 @@ export interface IngestResult {
   eventId: string;
   evidence: NormalizedEvidenceItem[];
   message: string;
+  /** Present when ingest produced a provider-event envelope (SHE-69). */
+  envelope?: ProviderEventEnvelope;
+  audit?: IntegrationAuditRecord;
 }
 
 export interface RefreshResult {
@@ -128,6 +131,71 @@ export interface RefreshResult {
   evidence: NormalizedEvidenceItem[];
   /** Newly ingested or updated item ids */
   upsertedIds: string[];
+}
+
+/** Native provider identity for install-ready webhook ingress (SHE-69). */
+export const NATIVE_PROVIDERS = ["github", "linear", "vercel"] as const;
+export type NativeProvider = (typeof NATIVE_PROVIDERS)[number];
+
+/**
+ * Common provider-event envelope after signature validation + normalization.
+ * Keeps provider-native metadata audit-safe (no secrets / raw oversized payloads).
+ */
+export interface ProviderEventEnvelope {
+  /** Idempotency key — typically provider delivery id */
+  deliveryId: string;
+  provider: NativeProvider;
+  /** Provider event type, e.g. pull_request, Issue, deployment.succeeded */
+  eventType: string;
+  receivedAt: string;
+  /** Best-effort release linkage when resolvable from payload */
+  releaseId: string | null;
+  /** ISO timestamp extracted from the provider payload when available */
+  eventTimestamp: string | null;
+  /** SHA-256 of the raw body for audit/replay diagnostics */
+  payloadHash: string;
+  evidence: NormalizedEvidenceItem[];
+  sourceLinks: SourceLink[];
+  metadata?: Record<string, unknown>;
+}
+
+export type IntegrationAuditStatus =
+  | "accepted"
+  | "duplicate"
+  | "rejected"
+  | "stale"
+  | "oversized";
+
+/** Append-only style audit record for webhook ingestion outcomes. */
+export interface IntegrationAuditRecord {
+  id: string;
+  provider: NativeProvider | "webhook";
+  deliveryId: string;
+  eventType: string;
+  status: IntegrationAuditStatus;
+  receivedAt: string;
+  message: string;
+  releaseId: string | null;
+  evidenceIds: string[];
+  errorCode?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export type ConnectionHealth = "healthy" | "stale" | "error" | "never";
+
+/** Per-provider connection freshness and actionable error state. */
+export interface ConnectionState {
+  provider: NativeProvider | "webhook";
+  health: ConnectionHealth;
+  lastEventAt: string | null;
+  lastEventId: string | null;
+  lastEventType: string | null;
+  lastSuccessAt: string | null;
+  lastErrorAt: string | null;
+  /** Actionable error for operators (no secrets). */
+  lastError: { code: string; message: string } | null;
+  /** True when install/webhook secret is configured */
+  configured: boolean;
 }
 
 export class IntegrationError extends Error {

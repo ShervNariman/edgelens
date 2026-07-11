@@ -7,6 +7,7 @@ import { VercelAdapter } from "./vercel";
 
 export { FixtureAdapter } from "./fixture";
 export { GitHubAdapter } from "./github";
+export { GitHubCheckRunPublisher } from "./github-checks-publish";
 export { LinearAdapter } from "./linear";
 export { VercelAdapter } from "./vercel";
 
