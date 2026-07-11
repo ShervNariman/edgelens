@@ -1,0 +1,61 @@
+import { NextResponse } from "next/server";
+
+import {
+  getIntegrationEnv,
+  ingestSignedWebhook,
+  IntegrationError,
+} from "@/lib/release-room/integrations";
+
+export const runtime = "nodejs";
+
+/**
+ * Generic signed webhook / evidence ingestion endpoint.
+ * Requires header `x-release-room-signature: sha256=<hex>` over the raw body.
+ */
+export async function POST(request: Request): Promise<Response> {
+  const env = getIntegrationEnv();
+  const rawBody = await request.text();
+  const signatureHeader =
+    request.headers.get("x-release-room-signature") ??
+    request.headers.get("x-signature");
+
+  try {
+    const result = ingestSignedWebhook({
+      rawBody,
+      signatureHeader,
+      secret: env.webhookSecret,
+    });
+
+    const status = result.status === "duplicate" ? 200 : 202;
+    return NextResponse.json(result, { status });
+  } catch (error) {
+    if (error instanceof IntegrationError) {
+      return NextResponse.json(
+        {
+          status: "rejected",
+          code: error.code,
+          message: error.message,
+        },
+        { status: error.status }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        status: "rejected",
+        code: "webhook_internal_error",
+        message: "Webhook ingestion failed.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(): Promise<Response> {
+  const env = getIntegrationEnv();
+  return NextResponse.json({
+    ok: true,
+    configured: Boolean(env.webhookSecret),
+    signatureHeader: "x-release-room-signature",
+  });
+}
