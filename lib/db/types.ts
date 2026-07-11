@@ -1,6 +1,12 @@
 export type DecisionStatus = "READY" | "BLOCKED" | "PENDING";
 
-export type EvidenceSource = "github" | "linear" | "vercel" | "fixture" | "manual";
+export type EvidenceSource =
+  | "github"
+  | "linear"
+  | "vercel"
+  | "fixture"
+  | "manual"
+  | "editor";
 
 export interface Workspace {
   id: string;
@@ -76,5 +82,10 @@ export interface Database {
     releaseId: string,
     input: Omit<AuditEvent, "id" | "at">,
   ): Promise<ReleaseCandidate>;
+  /**
+   * Persist a mutator result for a release. Used by signed editor/agent
+   * evidence ingest and other adapter writes.
+   */
+  saveRelease(release: ReleaseCandidate): Promise<ReleaseCandidate>;
   resetToSeed(): Promise<DatabaseSnapshot>;
 }

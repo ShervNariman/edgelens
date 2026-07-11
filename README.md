@@ -28,6 +28,7 @@ credentials from `.env.example`.
 | `npm run test:e2e`                | Playwright end-to-end tests              |
 | `npm run build`                   | Production build                         |
 | `npm run db:seed`                 | Reset local DB to seeded demo workspace  |
+| `npm run release-room -- …`       | Editor/agent evidence CLI (SHE-70)       |
 | `npm run ci`                      | format + lint + typecheck + unit + build |
 
 ## Architecture notes
@@ -35,6 +36,7 @@ credentials from `.env.example`.
 - **Auth:** single private owner via email/password env vars and signed HTTP-only session cookie.
 - **Database:** `DATABASE_ADAPTER=local` writes `${DATA_DIR}/local-db.json` with zero cloud credentials. Production Postgres path is documented in `docs/database.md`.
 - **Policy:** `lib/policy/decision.ts` recomputes READY / BLOCKED / PENDING from evidence.
+- **Editor/agent bridge:** signed CLI (`npm run release-room`) posts approved work evidence to `POST /api/evidence`. See `docs/editor-bridge.md`.
 - **UI primitives:** accessible native controls in `components/ui` (no heavy component library).
 
 ## Acceptance (foundation)

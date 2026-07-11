@@ -57,6 +57,15 @@ const readyEvidence: EvidenceItem[] = [
     url: "https://release-room-demo.vercel.app",
     collectedAt: iso(0, 9),
   },
+  {
+    id: "editor:run_demo_seed:complete",
+    source: "editor",
+    title: "Cursor run completed",
+    summary:
+      "SHE-58 scaffold polish · model grok-4.5 · branch cursor/she-58-release-room-scaffold-c3bb · checks: lint, typecheck, test",
+    status: "pass",
+    collectedAt: iso(0, 10),
+  },
 ];
 
 const blockedEvidence: EvidenceItem[] = [
@@ -109,6 +118,14 @@ export function createSeedSnapshot(ownerEmail = DEMO_OWNER.email): DatabaseSnaps
         actorEmail: owner.email,
         action: "release.created",
         detail: "Seeded READY candidate for demo walkthrough.",
+      },
+      {
+        id: "audit_ready_editor",
+        at: iso(0, 10),
+        actorEmail: "editor:cursor@release-room.local",
+        action: "editor.complete",
+        detail:
+          "SHE-58 scaffold polish · model grok-4.5 · branch cursor/she-58-release-room-scaffold-c3bb · checks: lint, typecheck, test",
       },
     ],
     createdAt: iso(1, 9),

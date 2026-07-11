@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Evidence-backed go/no-go release system for small AI-native startup teams.",
+  "bin": {
+    "release-room": "./cli/release-room.mjs"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -17,6 +20,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "db:seed": "tsx scripts/seed.ts",
+    "release-room": "tsx cli/release-room.ts",
     "ci": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {

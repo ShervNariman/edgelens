@@ -112,6 +112,12 @@ export function createLocalDatabase(options: {
         updatedAt: new Date().toISOString(),
       }));
     },
+    async saveRelease(release) {
+      return mutateRelease(release.id, () => ({
+        ...release,
+        updatedAt: release.updatedAt || new Date().toISOString(),
+      }));
+    },
     async resetToSeed() {
       const snapshot = createSeedSnapshot(options.ownerEmail);
       await persist(snapshot);

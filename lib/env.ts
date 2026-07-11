@@ -10,6 +10,8 @@ const envSchema = z
     OWNER_PASSWORD: z.string().min(8),
     SESSION_SECRET: z.string().min(32),
     APP_URL: z.string().url().default("http://localhost:3000"),
+    /** Shared HMAC secret for the editor/agent evidence bridge. Empty disables ingest. */
+    RELEASE_ROOM_EVIDENCE_SECRET: z.string().optional().default(""),
   })
   .superRefine((value, ctx) => {
     if (value.DATABASE_ADAPTER === "postgres" && !value.DATABASE_URL) {
@@ -35,6 +37,7 @@ function readRawEnv(): Record<string, string | undefined> {
     OWNER_PASSWORD: process.env.OWNER_PASSWORD,
     SESSION_SECRET: process.env.SESSION_SECRET,
     APP_URL: process.env.APP_URL,
+    RELEASE_ROOM_EVIDENCE_SECRET: process.env.RELEASE_ROOM_EVIDENCE_SECRET,
   };
 }
 

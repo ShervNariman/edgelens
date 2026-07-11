@@ -60,6 +60,10 @@ export default async function ReleaseDetailPage({
 
         <section className="mt-10">
           <h2 className="text-xl font-semibold tracking-tight">Evidence</h2>
+          <p className="mt-1 text-sm text-[var(--color-muted)]">
+            Engineering evidence includes CI, deployments, and approved editor/agent
+            bridge submissions — not private editor telemetry.
+          </p>
           <ul className="mt-4 flex flex-col gap-3">
             {release.evidence.map((item) => (
               <li
@@ -69,7 +73,8 @@ export default async function ReleaseDetailPage({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-medium">{item.title}</p>
                   <span className="text-xs font-semibold tracking-wide text-[var(--color-muted)] uppercase">
-                    {item.source} · {item.status}
+                    {item.source === "editor" ? "editor/agent" : item.source} ·{" "}
+                    {item.status}
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-[var(--color-ink-soft)]">

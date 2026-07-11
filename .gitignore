@@ -24,6 +24,9 @@
 # local database (zero-credential mode)
 /.data/
 
+# editor/agent bridge local run state
+/.release-room/
+
 # misc
 .DS_Store
 *.pem

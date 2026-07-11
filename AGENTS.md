@@ -18,6 +18,7 @@ Private MVP: evidence-backed go/no-go release decisions for a single owner works
 | Auth / session boundary    | Cursor          | `lib/auth/`, `middleware.ts`    |
 | Database adapters + seed   | Cursor          | `lib/db/`, `docs/database.md`   |
 | Policy engine              | Cursor          | `lib/policy/`                   |
+| Editor/agent bridge        | Cursor          | `lib/editor-bridge/`, `cli/`    |
 | CI / tests / formatting    | Cursor or Codex | `.github/`, `vitest`, `e2e/`    |
 | Product copy / README      | Codex or Cursor | Keep claims narrow and accurate |
 | Merge + private deploy     | Human owner     | Final go/no-go                  |
