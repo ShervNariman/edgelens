@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, IBM_Plex_Sans } from "next/font/google";
+import { PostHogAnalytics } from "@/components/analytics/posthog-analytics";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
@@ -44,6 +45,10 @@ export default function RootLayout({
         >
           <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
+        <PostHogAnalytics
+          product="edgelens"
+          excludeRoutes={["/record"]}
+        />
       </body>
     </html>
   );
