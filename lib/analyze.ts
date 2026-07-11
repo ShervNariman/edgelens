@@ -9,6 +9,7 @@ import type {
   StateCoverage,
   SuggestedFix,
 } from "@/types/analysis";
+import { captureEvent } from "./analytics";
 import { detectComponents, extractComponentName, parseSource } from "./parser";
 import { checkMissingStates } from "./rules/states";
 import { checkAccessibility } from "./rules/a11y";
@@ -142,8 +143,9 @@ export function analyzeComponent(
     ...a11yIssues,
     ...axeIssues,
   ]);
+  const summary = buildSummary(issues, stateCoverage, detectedComponents);
 
-  return {
+  const report: AnalysisReport = {
     id,
     analyzedAt,
     sourceCode: trimmed,
@@ -156,9 +158,27 @@ export function analyzeComponent(
     axeViolations,
     previewDomChecked,
     suggestedFixes,
-    summary: buildSummary(issues, stateCoverage, detectedComponents),
+    summary,
     parseErrors,
   };
+
+  // The first deterministic pass is the product activation event. The later
+  // axe merge reuses this function and must not double-count activation.
+  if (!previewDomChecked) {
+    captureEvent("analysis_completed", {
+      score: summary.score,
+      issue_count: summary.totalIssues,
+      critical_count: summary.criticalCount,
+      warning_count: summary.warningCount,
+      states_covered: summary.statesCovered,
+      states_total: summary.statesTotal,
+      components_detected: summary.componentsDetected,
+      primary_type: primaryType,
+      parse_error_count: parseErrors.length,
+    });
+  }
+
+  return report;
 }
 
 function axeViolationsToIssues(violations: AxeViolation[]): AnalysisIssue[] {
