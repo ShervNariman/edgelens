@@ -1,18 +1,48 @@
-import * as React from "react"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
-import { cn } from "@/lib/utils"
-
-function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
-  return (
-    <textarea
-      data-slot="textarea"
-      className={cn(
-        "flex field-sizing-content min-h-16 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
-        className
-      )}
-      {...props}
-    />
-  )
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label: string;
+  hint?: string;
+  error?: string;
 }
 
-export { Textarea }
+export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  function Textarea({ className, id, label, hint, error, ...props }, ref) {
+    const inputId = id ?? props.name ?? label.toLowerCase().replace(/\s+/g, "-");
+    const hintId = hint ? `${inputId}-hint` : undefined;
+    const errorId = error ? `${inputId}-error` : undefined;
+
+    return (
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor={inputId} className="text-sm font-medium text-[var(--color-ink)]">
+          {label}
+        </label>
+        <textarea
+          ref={ref}
+          id={inputId}
+          className={cn(
+            "min-h-24 rounded-md border border-[var(--color-line)] bg-[var(--color-paper)] px-3 py-2 text-[var(--color-ink)]",
+            "placeholder:text-[var(--color-muted)]",
+            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]",
+            error && "border-[var(--color-danger)]",
+            className,
+          )}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
+          {...props}
+        />
+        {hint ? (
+          <p id={hintId} className="text-xs text-[var(--color-muted)]">
+            {hint}
+          </p>
+        ) : null}
+        {error ? (
+          <p id={errorId} className="text-xs text-[var(--color-danger)]" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    );
+  },
+);

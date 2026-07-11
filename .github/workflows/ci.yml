@@ -15,10 +15,15 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       NEXT_TELEMETRY_DISABLED: "1"
-      NEXT_PUBLIC_POSTHOG_ENABLED: "false"
+      DATABASE_ADAPTER: local
+      DATA_DIR: .data/ci
+      OWNER_EMAIL: owner@release-room.local
+      OWNER_PASSWORD: release-room-dev
+      SESSION_SECRET: ci-session-secret-at-least-32-characters-long
+      APP_URL: http://127.0.0.1:3000
 
     steps:
       - name: Checkout
@@ -33,11 +38,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck
-        run: npm run typecheck
+      - name: Format check
+        run: npm run format:check
 
       - name: Lint
         run: npm run lint
 
-      - name: Build
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Production build
         run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npm run test:e2e
