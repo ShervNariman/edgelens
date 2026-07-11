@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { CODE_EXAMPLES, type CodeExample } from "@/examples";
+import { captureEvent } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { Loader2, Sparkles } from "lucide-react";
 
@@ -52,7 +53,10 @@ export function CodeInputPanel({
             <button
               key={example.id}
               type="button"
-              onClick={() => onSelectExample(example)}
+              onClick={() => {
+                captureEvent("example_selected", { example_id: example.id });
+                onSelectExample(example);
+              }}
               className={cn(
                 "rounded-lg border text-left transition-all duration-200",
                 "hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -111,7 +115,7 @@ export function CodeInputPanel({
           spellCheck={false}
           placeholder={`// Paste a React / shadcn component…\nexport function Example() {\n  return <Button>Click</Button>\n}`}
           className={cn(
-            "flex-1 resize-y font-mono text-xs leading-relaxed",
+            "ph-no-capture flex-1 resize-y font-mono text-xs leading-relaxed",
             compact
               ? "min-h-[160px] lg:min-h-[min(28vh,260px)]"
               : "min-h-[220px] lg:min-h-[min(42vh,380px)]"
@@ -122,7 +126,13 @@ export function CodeInputPanel({
       <Button
         size={compact ? "default" : "lg"}
         className="w-full gap-2"
-        onClick={onAnalyze}
+        onClick={() => {
+          captureEvent("analysis_started", {
+            source_kind: selectedExample ? "example" : "custom",
+            example_id: selectedExample?.id ?? null,
+          });
+          onAnalyze();
+        }}
         disabled={isAnalyzing || !code.trim()}
       >
         {isAnalyzing ? (
