@@ -24,6 +24,12 @@ export function captureEvent(
   if (typeof window === "undefined") return;
   if (process.env.NEXT_PUBLIC_POSTHOG_ENABLED === "false") return;
   if (!process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN) return;
+  if (
+    window.location.pathname === "/record" ||
+    window.location.pathname.startsWith("/record/")
+  ) {
+    return;
+  }
 
   try {
     const posthog = (window as Window & { posthog?: PostHogBrowserClient }).posthog;
