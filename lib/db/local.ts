@@ -112,6 +112,9 @@ export function createLocalDatabase(options: {
         updatedAt: new Date().toISOString(),
       }));
     },
+    async updateRelease(releaseId, updater) {
+      return mutateRelease(releaseId, updater);
+    },
     async resetToSeed() {
       const snapshot = createSeedSnapshot(options.ownerEmail);
       await persist(snapshot);

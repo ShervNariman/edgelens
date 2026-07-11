@@ -144,10 +144,53 @@ export function createSeedSnapshot(ownerEmail = DEMO_OWNER.email): DatabaseSnaps
     updatedAt: iso(0, 8),
   });
 
+  const pendingEvidence: EvidenceItem[] = [
+    {
+      id: "ev_linear_pending",
+      source: "linear",
+      title: "Linear acceptance",
+      summary: "Acceptance checkboxes still open on SHE-71 live dashboard.",
+      status: "warn",
+      url: "https://linear.app/example/issue/SHE-71",
+      collectedAt: iso(0, 6),
+    },
+    {
+      id: "ev_gh_pending",
+      source: "github",
+      title: "CI checks",
+      summary: "Checks running on the live-dashboard branch.",
+      status: "info",
+      url: "https://github.com/example/app/actions",
+      collectedAt: iso(0, 6),
+    },
+  ];
+
+  const pending: ReleaseCandidate = release({
+    id: "rc_pending_001",
+    title: "Live dashboard polish",
+    version: "0.1.2-rc.0",
+    branch: "cursor/she-71-live-dashboard-047c",
+    decision: "PENDING",
+    summary: "Waiting on human review of live freshness and activity rail.",
+    evidence: pendingEvidence,
+    approvals: [],
+    audit: [
+      {
+        id: "audit_pending_created",
+        at: iso(0, 6),
+        actorEmail: owner.email,
+        action: "release.created",
+        detail: "Seeded PENDING candidate waiting on human action.",
+      },
+    ],
+    createdAt: iso(0, 6),
+    updatedAt: iso(0, 6),
+  });
+
   return {
     workspace: DEMO_WORKSPACE,
     owner,
-    releases: [ready, blocked],
+    releases: [ready, blocked, pending],
   };
 }
 

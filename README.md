@@ -36,6 +36,7 @@ credentials from `.env.example`.
 - **Database:** `DATABASE_ADAPTER=local` writes `${DATA_DIR}/local-db.json` with zero cloud credentials. Production Postgres path is documented in `docs/database.md`.
 - **Policy:** `lib/policy/decision.ts` recomputes READY / BLOCKED / PENDING from evidence.
 - **UI primitives:** accessible native controls in `components/ui` (no heavy component library).
+- **Live dashboard (SHE-71):** `/app` polls `GET /api/internal/snapshot` with visibility-aware refresh, provider freshness, KPIs, and an activity rail. See `docs/live-dashboard.md`.
 
 ## Acceptance (foundation)
 

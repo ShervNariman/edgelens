@@ -12,15 +12,16 @@ Private MVP: evidence-backed go/no-go release decisions for a single owner works
 
 ## Ownership
 
-| Area                       | Owner           | Notes                           |
-| -------------------------- | --------------- | ------------------------------- |
-| App Router UI + primitives | Cursor          | `app/`, `components/`           |
-| Auth / session boundary    | Cursor          | `lib/auth/`, `middleware.ts`    |
-| Database adapters + seed   | Cursor          | `lib/db/`, `docs/database.md`   |
-| Policy engine              | Cursor          | `lib/policy/`                   |
-| CI / tests / formatting    | Cursor or Codex | `.github/`, `vitest`, `e2e/`    |
-| Product copy / README      | Codex or Cursor | Keep claims narrow and accurate |
-| Merge + private deploy     | Human owner     | Final go/no-go                  |
+| Area                       | Owner           | Notes                                    |
+| -------------------------- | --------------- | ---------------------------------------- |
+| App Router UI + primitives | Cursor          | `app/`, `components/`                    |
+| Live founder dashboard     | Cursor          | `lib/live/`, `hooks/`, `/api/internal/*` |
+| Auth / session boundary    | Cursor          | `lib/auth/`, `middleware.ts`             |
+| Database adapters + seed   | Cursor          | `lib/db/`, `docs/database.md`            |
+| Policy engine              | Cursor          | `lib/policy/`                            |
+| CI / tests / formatting    | Cursor or Codex | `.github/`, `vitest`, `e2e/`             |
+| Product copy / README      | Codex or Cursor | Keep claims narrow and accurate          |
+| Merge + private deploy     | Human owner     | Final go/no-go                           |
 
 **Hard rule:** one Linear issue → one branch → one PR. Do not run Cursor and Codex on the same files at once.
 

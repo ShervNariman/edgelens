@@ -76,5 +76,10 @@ export interface Database {
     releaseId: string,
     input: Omit<AuditEvent, "id" | "at">,
   ): Promise<ReleaseCandidate>;
+  /** Apply a pure update to a release candidate (evidence / decision / timestamps). */
+  updateRelease(
+    releaseId: string,
+    updater: (release: ReleaseCandidate) => ReleaseCandidate,
+  ): Promise<ReleaseCandidate>;
   resetToSeed(): Promise<DatabaseSnapshot>;
 }
