@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type {
   AnalysisReport,
   AxeViolation,
   ComponentState,
 } from "@/types/analysis";
 import { analyzeComponent } from "@/lib/analyze";
+import { captureEvent } from "@/lib/analytics";
 import { CODE_EXAMPLES, findExampleByCode, type CodeExample } from "@/examples";
 import { Hero } from "@/components/hero";
 import { CodeInputPanel } from "@/components/code-input-panel";
@@ -17,10 +18,16 @@ import { PreviewErrorBoundary } from "@/components/preview-error-boundary";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { cn } from "@/lib/utils";
 import {
+  ANALYZER_COPY,
   DEMO_STORY,
-  HERO_SUPPORT,
   LIMITATION_COPY,
+  WORKFLOW_STEPS,
 } from "@/lib/product-copy";
+import {
+  getSourceSizeStatus,
+  MAX_SOURCE_CHARS,
+} from "@/lib/source-limits";
+import { scrollIntoViewPreferReduced, yieldToMain } from "@/lib/yield-main";
 
 /** Launch demo: happy-path form that forgets loading/error/disabled states. */
 const RECORDING_EXAMPLE_ID = "login-form";
@@ -46,7 +53,9 @@ function resolveInitialExample(mode: "default" | "recording"): CodeExample {
 export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
   const isRecording = mode === "recording";
   const analyzerRef = useRef<HTMLElement>(null);
+  const reportHeadingRef = useRef<HTMLHeadingElement>(null);
   const autoAnalyzedRef = useRef(false);
+  const announceId = useId();
   const initialExample = resolveInitialExample(mode);
 
   const [code, setCode] = useState(initialExample.code);
@@ -58,87 +67,116 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
   const [forcedState, setForcedState] = useState<ComponentState>("default");
   const [pendingAxe, setPendingAxe] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+
+  const announce = useCallback((message: string) => {
+    // Retrigger polite live region even when message text repeats.
+    setAnnouncement("");
+    window.setTimeout(() => setAnnouncement(message), 30);
+  }, []);
 
   const scrollToAnalyzer = useCallback(() => {
-    analyzerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollIntoViewPreferReduced(analyzerRef.current, "start");
   }, []);
 
   const handleCodeChange = useCallback((value: string) => {
     setCode(value);
     setSelectedExample(findExampleByCode(value) ?? null);
     setReport(null);
+    setPendingAxe(false);
+    setError(null);
   }, []);
 
   const handleSelectExample = useCallback((example: CodeExample) => {
     setSelectedExample(example);
     setCode(example.code);
     setReport(null);
+    setPendingAxe(false);
+    setError(null);
     setForcedState("default");
   }, []);
 
-  const handleAnalyze = useCallback(() => {
-    setIsAnalyzing(true);
-    setError(null);
-    setPendingAxe(false);
+  const runAnalysis = useCallback(
+    async (source: string) => {
+      setIsAnalyzing(true);
+      setError(null);
+      setPendingAxe(false);
 
-    window.setTimeout(() => {
       try {
-        const next = analyzeComponent(code);
+        if (getSourceSizeStatus(source) === "over") {
+          setReport(null);
+          setError(ANALYZER_COPY.sourceOverLimit);
+          captureEvent("analysis_failed", {
+            reason: "source_too_large",
+            source_chars: source.length,
+            max_chars: MAX_SOURCE_CHARS,
+          });
+          announce(ANALYZER_COPY.sourceOverLimit);
+          return;
+        }
+
+        await yieldToMain(isRecording ? 40 : 120);
+        const next = analyzeComponent(source);
         setReport(next);
         setForcedState("default");
         setPendingAxe(true);
+        announce(ANALYZER_COPY.analysisComplete(next.summary.totalIssues));
+
+        window.setTimeout(() => {
+          reportHeadingRef.current?.focus();
+        }, 40);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Analysis failed");
+        const message =
+          err instanceof Error ? err.message : ANALYZER_COPY.analysisFailed;
+        setError(message);
         setReport(null);
+        captureEvent("analysis_failed", { reason: "exception" });
+        announce(message);
       } finally {
         setIsAnalyzing(false);
       }
-    }, isRecording ? 180 : 350);
-  }, [code, isRecording]);
+    },
+    [announce, isRecording]
+  );
 
-  const handleAxeResults = useCallback((violations: AxeViolation[]) => {
-    setPendingAxe(false);
-    setReport((prev) => {
-      if (!prev) return prev;
-      try {
-        return analyzeComponent(prev.sourceCode, { axeViolations: violations });
-      } catch (err) {
-        console.error("[EdgeLens] axe merge failed", err);
-        return {
-          ...prev,
-          axeViolations: violations,
-          previewDomChecked: true,
-        };
-      }
-    });
-  }, []);
+  const handleAnalyze = useCallback(() => {
+    void runAnalysis(code);
+  }, [code, runAnalysis]);
+
+  const handleAxeResults = useCallback(
+    (violations: AxeViolation[]) => {
+      setPendingAxe(false);
+      setReport((prev) => {
+        if (!prev) return prev;
+        try {
+          return analyzeComponent(prev.sourceCode, { axeViolations: violations });
+        } catch (err) {
+          console.error("[EdgeLens] axe merge failed", err);
+          return {
+            ...prev,
+            axeViolations: violations,
+            previewDomChecked: true,
+          };
+        }
+      });
+      announce(
+        violations.length === 0
+          ? ANALYZER_COPY.previewDomDone
+          : `${ANALYZER_COPY.previewDomDone}. ${violations.length} preview finding${
+              violations.length === 1 ? "" : "s"
+            }.`
+      );
+    },
+    [announce]
+  );
 
   // Recording route: auto-analyze the preloaded demo once on mount (client-only).
   useEffect(() => {
     if (!isRecording || autoAnalyzedRef.current) return;
     if (!code.trim()) return;
     autoAnalyzedRef.current = true;
-
-    setIsAnalyzing(true);
-    setError(null);
-    setPendingAxe(false);
-
-    const timer = window.setTimeout(() => {
-      try {
-        const next = analyzeComponent(code);
-        setReport(next);
-        setForcedState("default");
-        setPendingAxe(true);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Analysis failed");
-        setReport(null);
-      } finally {
-        setIsAnalyzing(false);
-      }
-    }, 120);
-
-    return () => window.clearTimeout(timer);
-  }, [isRecording, code]);
+    void runAnalysis(code);
+  }, [isRecording, code, runAnalysis]);
 
   return (
     <ErrorBoundary fallbackTitle="EdgeLens hit a runtime error">
@@ -149,11 +187,23 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
             "bg-[radial-gradient(ellipse_at_top,_oklch(0.28_0.04_160_/_0.35),_transparent_55%)]"
         )}
       >
+        <div
+          id={announceId}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {announcement}
+        </div>
+
         {isRecording ? (
           <header className="border-b border-border/40 bg-background/70 backdrop-blur-md">
             <div className="mx-auto flex h-9 max-w-[1600px] items-center justify-between px-4 sm:px-6 xl:px-8">
               <div className="flex items-center gap-2 font-mono text-sm">
-                <span className="text-emerald-400">›</span>
+                <span className="text-emerald-400" aria-hidden>
+                  ›
+                </span>
                 <span>edgelens</span>
                 <span className="hidden text-muted-foreground/70 sm:inline">
                   · record
@@ -168,13 +218,15 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
           <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
             <div className="mx-auto flex h-11 max-w-7xl items-center justify-between px-4 sm:px-6">
               <div className="flex items-center gap-2 font-mono text-sm">
-                <span className="text-emerald-400">›</span>
+                <span className="text-emerald-400" aria-hidden>
+                  ›
+                </span>
                 <span>edgelens</span>
               </div>
               <button
                 type="button"
                 onClick={scrollToAnalyzer}
-                className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+                className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 Analyzer
               </button>
@@ -226,15 +278,35 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
               )}
             </div>
           ) : (
-            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <div className="mb-5 space-y-3">
               <div className="space-y-1">
                 <h2 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
-                  Analyzer
+                  {ANALYZER_COPY.heading}
                 </h2>
                 <p className="max-w-2xl text-sm text-muted-foreground">
-                  {HERO_SUPPORT}
+                  {ANALYZER_COPY.intro}
                 </p>
               </div>
+              <nav
+                aria-label="Analyzer workflow"
+                className="flex flex-wrap gap-2"
+              >
+                {WORKFLOW_STEPS.map((step, index) => (
+                  <a
+                    key={step.id}
+                    href={step.href}
+                    className="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-card/30 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <span className="font-mono text-[10px] text-emerald-600">
+                      {index + 1}
+                    </span>
+                    <span className="font-medium text-foreground/90">
+                      {step.label}
+                    </span>
+                    <span className="hidden sm:inline">{step.blurb}</span>
+                  </a>
+                ))}
+              </nav>
             </div>
           )}
 
@@ -256,11 +328,14 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
             )}
           >
             <section
+              id="analyzer-source"
+              aria-labelledby="analyzer-source-heading"
               className={cn(
-                "rounded-xl border border-border/70 bg-card/20 p-4 sm:p-5 lg:col-span-5",
+                "scroll-mt-16 rounded-xl border border-border/70 bg-card/20 p-4 sm:p-5 lg:col-span-5 lg:row-span-2",
                 !isRecording &&
-                  "lg:sticky lg:top-14 lg:max-h-[calc(100vh-4.5rem)] lg:overflow-y-auto",
-                isRecording && "lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto"
+                  "order-3 lg:order-1 lg:sticky lg:top-14 lg:max-h-[calc(100vh-4.5rem)] lg:overflow-y-auto",
+                isRecording &&
+                  "lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto"
               )}
             >
               <CodeInputPanel
@@ -271,13 +346,16 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
                 selectedExample={selectedExample}
                 onSelectExample={handleSelectExample}
                 compact={isRecording}
+                sourceHeadingId="analyzer-source-heading"
               />
             </section>
 
             <section
+              id="analyzer-preview"
+              aria-labelledby="analyzer-preview-heading"
               className={cn(
-                "flex flex-col lg:col-span-7",
-                isRecording ? "gap-4" : "gap-5"
+                "scroll-mt-16 lg:col-span-7",
+                !isRecording && "order-1 lg:order-2"
               )}
             >
               <PreviewErrorBoundary>
@@ -291,14 +369,38 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
                   onForceState={setForcedState}
                   runAxe={pendingAxe && Boolean(report)}
                   onAxeResults={handleAxeResults}
+                  pendingAxe={pendingAxe}
+                  headingId="analyzer-preview-heading"
                 />
               </PreviewErrorBoundary>
+            </section>
 
-              <div className="rounded-xl border border-border/70 bg-card/20 p-4 sm:p-5">
-                <div className="mb-4 flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-medium tracking-wide">
-                    Analysis report
-                  </h3>
+            <section
+              id="analyzer-report"
+              aria-labelledby="analyzer-report-heading"
+              className={cn(
+                "scroll-mt-16 rounded-xl border border-border/70 bg-card/20 p-4 sm:p-5 lg:col-span-7",
+                !isRecording && "order-2 lg:order-3"
+              )}
+            >
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <h3
+                  id="analyzer-report-heading"
+                  ref={reportHeadingRef}
+                  tabIndex={-1}
+                  className="text-sm font-medium tracking-wide outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  {ANALYZER_COPY.reportTitle}
+                </h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  {pendingAxe && (
+                    <span
+                      className="font-mono text-[10px] text-violet-800"
+                      aria-busy="true"
+                    >
+                      {ANALYZER_COPY.previewDomPending}
+                    </span>
+                  )}
                   {report && (
                     <span className="font-mono text-[10px] text-muted-foreground">
                       {report.componentName ?? "component"} ·{" "}
@@ -306,8 +408,13 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
                     </span>
                   )}
                 </div>
-                <ResultsPanel report={report} isAnalyzing={isAnalyzing} />
               </div>
+              <ResultsPanel
+                report={report}
+                isAnalyzing={isAnalyzing}
+                pendingAxe={pendingAxe}
+                onAnnounce={announce}
+              />
             </section>
           </div>
         </main>

@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CHECK_LAYERS, LIMITATION_COPY } from "@/lib/product-copy";
+import { ANALYZER_COPY, CHECK_LAYERS } from "@/lib/product-copy";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
@@ -25,12 +25,18 @@ import { useMemo, useState } from "react";
 interface ResultsPanelProps {
   report: AnalysisReport | null;
   isAnalyzing: boolean;
+  pendingAxe?: boolean;
+  onAnnounce?: (message: string) => void;
 }
 
 function severityIcon(severity: IssueSeverity) {
-  if (severity === "critical") return <ShieldAlert className="h-3.5 w-3.5" />;
-  if (severity === "warning") return <AlertTriangle className="h-3.5 w-3.5" />;
-  return <Info className="h-3.5 w-3.5" />;
+  if (severity === "critical") {
+    return <ShieldAlert className="h-3.5 w-3.5" aria-hidden />;
+  }
+  if (severity === "warning") {
+    return <AlertTriangle className="h-3.5 w-3.5" aria-hidden />;
+  }
+  return <Info className="h-3.5 w-3.5" aria-hidden />;
 }
 
 function severityClass(severity: IssueSeverity) {
@@ -120,7 +126,12 @@ function buildFindingsSummary(report: AnalysisReport): string {
   return parts.join(" · ") || `${summary.totalIssues} findings to review`;
 }
 
-export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
+export function ResultsPanel({
+  report,
+  isAnalyzing,
+  pendingAxe = false,
+  onAnnounce,
+}: ResultsPanelProps) {
   const findingsSummary = useMemo(
     () => (report ? buildFindingsSummary(report) : ""),
     [report]
@@ -135,11 +146,22 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
   if (isAnalyzing) {
     return (
       <EmptyShell>
-        <div className="flex flex-col items-center gap-3 py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-400 border-t-transparent" />
+        <div
+          className="flex min-h-[280px] flex-col items-center justify-center gap-3 py-12"
+          aria-busy="true"
+        >
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-400 border-t-transparent motion-reduce:animate-none" />
           <p className="font-mono text-sm text-muted-foreground">
-            checking state completeness…
+            {ANALYZER_COPY.analyzing}
           </p>
+          <div className="mt-2 grid w-full max-w-md grid-cols-2 gap-2 opacity-60 sm:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-16 animate-pulse rounded-xl border border-border/60 bg-muted/40 motion-reduce:animate-none"
+              />
+            ))}
+          </div>
         </div>
       </EmptyShell>
     );
@@ -148,11 +170,12 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
   if (!report) {
     return (
       <EmptyShell>
-        <div className="flex flex-col items-center gap-2 py-12 text-center">
-          <p className="text-sm font-medium text-foreground">No analysis yet</p>
+        <div className="flex min-h-[280px] flex-col items-center justify-center gap-2 py-12 text-center">
+          <p className="text-sm font-medium text-foreground">
+            {ANALYZER_COPY.noAnalysisYet}
+          </p>
           <p className="max-w-sm text-xs text-muted-foreground">
-            Load an example or paste a component, then click Analyze. State
-            completeness is the primary check.
+            {ANALYZER_COPY.noAnalysisHint}
           </p>
         </div>
       </EmptyShell>
@@ -204,13 +227,12 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
         <Stat label="Components" value={`${summary.componentsDetected}`} />
       </div>
       <p className="text-[11px] leading-relaxed text-muted-foreground">
-        Score is heuristic — weighted toward state completeness, with supporting
-        static and preview risk signals. Not a WCAG score.
+        {ANALYZER_COPY.scoreDisclaimer}
       </p>
 
       <div className="rounded-xl border border-sky-500/25 bg-sky-500/5 px-4 py-3">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-sky-800 dark:text-sky-200">
-          State completeness · hero check
+        <p className="text-[11px] font-medium uppercase tracking-wider text-sky-900">
+          {ANALYZER_COPY.stateHeroLabel}
         </p>
         <p className="mt-1.5 text-sm leading-relaxed text-foreground">
           {findingsSummary}
@@ -265,13 +287,15 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
             <span>
               <span className="text-foreground/85">Preview DOM</span>
               {" — "}
-              {previewChecked
-                ? `${previewIssues.length || axeViolations.length} finding${
-                    (previewIssues.length || axeViolations.length) === 1
-                      ? ""
-                      : "s"
-                  }`
-                : "pending after Analyze"}
+              {pendingAxe
+                ? ANALYZER_COPY.previewDomPending
+                : previewChecked
+                  ? `${previewIssues.length || axeViolations.length} finding${
+                      (previewIssues.length || axeViolations.length) === 1
+                        ? ""
+                        : "s"
+                    }`
+                  : "pending after Analyze"}
             </span>
           </li>
           <li className="flex gap-2">
@@ -291,7 +315,10 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
       </div>
 
       <Tabs defaultValue="states" className="w-full">
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4">
+        <TabsList
+          aria-label="Analysis report layers"
+          className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4"
+        >
           <TabsTrigger value="states" className="text-xs sm:text-sm">
             {CHECK_LAYERS.states.short}
             {missingRequired.length > 0 && (
@@ -472,7 +499,11 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
             <p className="text-[11px] text-muted-foreground">
               axe-core on the simulated preview DOM — not your raw pasted JSX.
             </p>
-            {!previewChecked ? (
+            {pendingAxe ? (
+              <p className="text-sm text-muted-foreground" aria-busy="true">
+                {ANALYZER_COPY.previewDomPending}
+              </p>
+            ) : !previewChecked ? (
               <p className="text-sm text-muted-foreground">
                 Preview DOM checks run automatically after Analyze.
               </p>
@@ -569,15 +600,12 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
                 key={fix.id}
                 fix={fix}
                 issue={issueById.get(fix.issueId)}
+                onAnnounce={onAnnounce}
               />
             ))
           )}
         </TabsContent>
       </Tabs>
-
-      <p className="text-[10px] leading-relaxed text-muted-foreground/80">
-        {LIMITATION_COPY}
-      </p>
     </div>
   );
 }
@@ -655,20 +683,49 @@ function Stat({
 
 function EmptyShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-border/70 bg-card/20">
+    <div className="flex min-h-[320px] items-center justify-center rounded-xl border border-dashed border-border/70 bg-card/20">
       {children}
     </div>
   );
 }
 
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall through to legacy path.
+  }
+
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 function FixCard({
   fix,
   issue,
+  onAnnounce,
 }: {
   fix: SuggestedFix;
   issue?: AnalysisIssue;
+  onAnnounce?: (message: string) => void;
 }) {
   const [copied, setCopied] = useState<"after" | "before" | null>(null);
+  const [copyError, setCopyError] = useState(false);
 
   const problem = fix.problem || issue?.title || fix.title;
   const why =
@@ -679,8 +736,16 @@ function FixCard({
     fix.suggestion || fix.description || issue?.suggestion || "";
 
   const copy = async (text: string, which: "after" | "before") => {
-    await navigator.clipboard.writeText(text);
+    const ok = await copyText(text);
+    if (!ok) {
+      setCopyError(true);
+      onAnnounce?.(ANALYZER_COPY.copyFailed);
+      window.setTimeout(() => setCopyError(false), 2000);
+      return;
+    }
+    setCopyError(false);
     setCopied(which);
+    onAnnounce?.(ANALYZER_COPY.copiedFix);
     window.setTimeout(() => setCopied(null), 1500);
   };
 
@@ -745,12 +810,17 @@ function FixCard({
                 size="xs"
                 variant="ghost"
                 className="gap-1.5"
-                onClick={() => copy(fix.before!, "before")}
+                aria-label={
+                  copied === "before"
+                    ? "Copied before snippet"
+                    : "Copy before snippet"
+                }
+                onClick={() => void copy(fix.before!, "before")}
               >
                 {copied === "before" ? (
-                  <Check className="h-3.5 w-3.5" />
+                  <Check className="h-3.5 w-3.5" aria-hidden />
                 ) : (
-                  <Copy className="h-3.5 w-3.5" />
+                  <Copy className="h-3.5 w-3.5" aria-hidden />
                 )}
                 {copied === "before" ? "Copied" : "Copy"}
               </Button>
@@ -771,12 +841,15 @@ function FixCard({
               size="xs"
               variant="outline"
               className="gap-1.5"
-              onClick={() => copy(fix.after, "after")}
+              aria-label={
+                copied === "after" ? "Copied after snippet" : "Copy after snippet"
+              }
+              onClick={() => void copy(fix.after, "after")}
             >
               {copied === "after" ? (
-                <Check className="h-3.5 w-3.5" />
+                <Check className="h-3.5 w-3.5" aria-hidden />
               ) : (
-                <Copy className="h-3.5 w-3.5" />
+                <Copy className="h-3.5 w-3.5" aria-hidden />
               )}
               {copied === "after" ? "Copied" : "Copy"}
             </Button>
@@ -786,6 +859,11 @@ function FixCard({
           </pre>
         </div>
       </div>
+      {copyError && (
+        <p className="border-t border-destructive/30 bg-destructive/5 px-4 py-2 text-xs text-destructive" role="alert">
+          {ANALYZER_COPY.copyFailed}
+        </p>
+      )}
     </article>
   );
 }
