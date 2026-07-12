@@ -234,3 +234,36 @@ Use instead:
 - Confirm the launch video uses examples that exist in the app at launch.
 - Confirm any screenshots or videos show States / Static / Preview / Fixes separation and limitation copy.
 - Keep claims aligned with the current implementation: static JSX/TSX heuristics plus client-side preview checks, not whole-app crawling or full accessibility certification.
+
+---
+
+## Milestone 2A marketing proof — real local-only workflow (SHE-149)
+
+**Label clearly:** this is a real local-only workflow. Source never leaves the browser.
+
+### Screenshot brief (one frame)
+
+Capture the analyzer after:
+
+1. Dragging a local `LoginForm.tsx` into EdgeLens (origin badge shows `local file`).
+2. Clicking **Analyze**.
+3. Forcing **Error** and **Disabled** in the preview chips.
+4. Showing missing states in the report + a Fixes tab ready to copy.
+
+Frame should include: privacy local-only note, source origin badge, forced-state chips, and state-completeness findings. Do **not** include analytics overlays or any server upload UI.
+
+Fixture path for local QA: `examples/fixtures/LoginForm.tsx`.
+
+### Short recording plan (≈45–60s)
+
+| Time | Action | On-screen proof |
+| --- | --- | --- |
+| 0–5s | Open `/analyzer`. Point at privacy note. | “Local-only — never uploads.” |
+| 5–15s | Drag `LoginForm.tsx` from Finder/desktop into the drop zone. | Origin → `local file`; file name shown in UI only. |
+| 15–22s | Click **Analyze**. | Progress → score + state gaps. |
+| 22–35s | Force **Error**, then **Disabled**. | Preview simulation + “not in source” chips. |
+| 35–50s | Open **States**, then **Fixes**; copy one template. | Why / evidence / confidence / next action; “Copied” + live region. |
+| 50–60s | End card: “Real local-only pre-flight — no upload, no LLM.” | |
+
+Voiceover line: “Drag a real component in. EdgeLens stays local, forces the states AI forgot, and gives you a copyable fix — without shipping your source anywhere.”
+

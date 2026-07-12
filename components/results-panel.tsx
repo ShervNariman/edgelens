@@ -11,7 +11,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CHECK_LAYERS, LIMITATION_COPY } from "@/lib/product-copy";
+import { captureEvent } from "@/lib/analytics";
+import {
+  confidenceForIssue,
+  confidenceLabel,
+  evidenceForIssue,
+  nextActionForIssue,
+  whyForIssue,
+} from "@/lib/finding-display";
+import type { SourceOrigin } from "@/lib/local-file";
+import {
+  CHECK_LAYERS,
+  LIMITATION_COPY,
+  ONBOARDING_STEPS,
+} from "@/lib/product-copy";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
@@ -25,6 +38,8 @@ import { useMemo, useState } from "react";
 interface ResultsPanelProps {
   report: AnalysisReport | null;
   isAnalyzing: boolean;
+  sourceOrigin?: SourceOrigin;
+  hasSource?: boolean;
 }
 
 function severityIcon(severity: IssueSeverity) {
@@ -120,7 +135,12 @@ function buildFindingsSummary(report: AnalysisReport): string {
   return parts.join(" · ") || `${summary.totalIssues} findings to review`;
 }
 
-export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
+export function ResultsPanel({
+  report,
+  isAnalyzing,
+  sourceOrigin = "example",
+  hasSource = false,
+}: ResultsPanelProps) {
   const findingsSummary = useMemo(
     () => (report ? buildFindingsSummary(report) : ""),
     [report]
@@ -135,10 +155,14 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
   if (isAnalyzing) {
     return (
       <EmptyShell>
-        <div className="flex flex-col items-center gap-3 py-12">
+        <div className="flex flex-col items-center gap-3 py-12" role="status">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-400 border-t-transparent" />
           <p className="font-mono text-sm text-muted-foreground">
             checking state completeness…
+          </p>
+          <p className="max-w-xs text-center text-[11px] text-muted-foreground/80">
+            Deterministic pass · static JSX/shadcn next · preview DOM after
+            render
           </p>
         </div>
       </EmptyShell>
@@ -148,11 +172,38 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
   if (!report) {
     return (
       <EmptyShell>
-        <div className="flex flex-col items-center gap-2 py-12 text-center">
-          <p className="text-sm font-medium text-foreground">No analysis yet</p>
+        <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
+          <p className="text-sm font-medium text-foreground">
+            {hasSource ? "Ready to analyze" : "No analysis yet"}
+          </p>
           <p className="max-w-sm text-xs text-muted-foreground">
-            Load an example or paste a component, then click Analyze. State
-            completeness is the primary check.
+            {hasSource
+              ? "Click Analyze to run the pre-flight check. State completeness is the primary layer."
+              : "Open a local file, paste a component, or load an example — then Analyze."}
+          </p>
+          {!hasSource && (
+            <ol className="mt-1 w-full max-w-sm space-y-1.5 text-left text-[11px] text-muted-foreground">
+              {ONBOARDING_STEPS.map((item) => (
+                <li key={item.step} className="flex gap-2">
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400">
+                    {item.step}.
+                  </span>
+                  <span>
+                    <span className="text-foreground/85">{item.title}</span>
+                    {" — "}
+                    {item.detail}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+          <p className="font-mono text-[10px] text-muted-foreground/70">
+            source origin:{" "}
+            {sourceOrigin === "local-file"
+              ? "local file"
+              : sourceOrigin === "example"
+                ? "example"
+                : "pasted"}
           </p>
         </div>
       </EmptyShell>
@@ -583,6 +634,11 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
 }
 
 function IssueCard({ issue }: { issue: AnalysisIssue }) {
+  const confidence = confidenceForIssue(issue);
+  const evidence = evidenceForIssue(issue);
+  const why = whyForIssue(issue);
+  const nextAction = nextActionForIssue(issue);
+
   return (
     <article
       className={cn(
@@ -594,7 +650,7 @@ function IssueCard({ issue }: { issue: AnalysisIssue }) {
         <span className="mt-0.5 text-foreground/80">
           {severityIcon(issue.severity)}
         </span>
-        <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-1.5">
             <h3 className="text-sm font-medium text-foreground">{issue.title}</h3>
             <Badge variant="outline" className="font-mono text-[10px]">
@@ -606,14 +662,36 @@ function IssueCard({ issue }: { issue: AnalysisIssue }) {
             >
               {sourceLabel(issue.source)}
             </Badge>
+            <Badge variant="outline" className="font-mono text-[10px] text-muted-foreground">
+              {confidenceLabel(confidence)}
+            </Badge>
           </div>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {issue.description}
-          </p>
-          <p className="text-xs text-foreground/80">
-            <span className="text-muted-foreground">Suggestion: </span>
-            {issue.suggestion}
-          </p>
+          <dl className="space-y-1.5 text-sm">
+            <div>
+              <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Why
+              </dt>
+              <dd className="mt-0.5 leading-relaxed text-muted-foreground">{why}</dd>
+            </div>
+            {evidence && (
+              <div>
+                <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Evidence
+                </dt>
+                <dd className="mt-0.5 font-mono text-[11px] text-foreground/80">
+                  {evidence}
+                </dd>
+              </div>
+            )}
+            <div>
+              <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Next action
+              </dt>
+              <dd className="mt-0.5 text-xs leading-relaxed text-foreground/85">
+                {nextAction}
+              </dd>
+            </div>
+          </dl>
         </div>
       </div>
     </article>
@@ -669,6 +747,7 @@ function FixCard({
   issue?: AnalysisIssue;
 }) {
   const [copied, setCopied] = useState<"after" | "before" | null>(null);
+  const [announce, setAnnounce] = useState("");
 
   const problem = fix.problem || issue?.title || fix.title;
   const why =
@@ -677,15 +756,35 @@ function FixCard({
     "Improves interaction clarity and reduces common accessibility risks.";
   const suggestion =
     fix.suggestion || fix.description || issue?.suggestion || "";
+  const confidence = issue ? confidenceForIssue(issue) : null;
 
   const copy = async (text: string, which: "after" | "before") => {
-    await navigator.clipboard.writeText(text);
-    setCopied(which);
-    window.setTimeout(() => setCopied(null), 1500);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(which);
+      setAnnounce(
+        which === "after"
+          ? "Fix template copied to clipboard."
+          : "Before snippet copied to clipboard."
+      );
+      captureEvent("fix_copied", {
+        snippet_kind: which,
+        has_before: Boolean(fix.before),
+      });
+      window.setTimeout(() => {
+        setCopied(null);
+        setAnnounce("");
+      }, 2000);
+    } catch {
+      setAnnounce("Copy failed. Select the snippet and copy manually.");
+    }
   };
 
   return (
     <article className="overflow-hidden rounded-xl border border-border/80 bg-card/40">
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {announce}
+      </div>
       <div className="space-y-3 border-b border-border/60 px-4 py-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <h3 className="text-sm font-semibold text-foreground">{fix.title}</h3>
@@ -706,6 +805,14 @@ function FixCard({
                 </Badge>
               </>
             )}
+            {confidence && (
+              <Badge
+                variant="outline"
+                className="font-mono text-[10px] text-muted-foreground"
+              >
+                {confidenceLabel(confidence)}
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -724,12 +831,16 @@ function FixCard({
           </div>
           <div>
             <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Suggested fix
+              Next action
             </dt>
             <dd className="mt-0.5 leading-relaxed text-foreground/90">
               {suggestion}
             </dd>
           </div>
+          <p className="text-[10px] text-muted-foreground/80">
+            Template only — review and adapt in your editor. Not a perfect
+            source diff.
+          </p>
         </dl>
       </div>
 
@@ -745,17 +856,22 @@ function FixCard({
                 size="xs"
                 variant="ghost"
                 className="gap-1.5"
+                aria-label={
+                  copied === "before"
+                    ? "Before snippet copied"
+                    : "Copy before snippet"
+                }
                 onClick={() => copy(fix.before!, "before")}
               >
                 {copied === "before" ? (
-                  <Check className="h-3.5 w-3.5" />
+                  <Check className="h-3.5 w-3.5" aria-hidden />
                 ) : (
-                  <Copy className="h-3.5 w-3.5" />
+                  <Copy className="h-3.5 w-3.5" aria-hidden />
                 )}
                 {copied === "before" ? "Copied" : "Copy"}
               </Button>
             </div>
-            <pre className="overflow-x-auto bg-muted/30 px-4 pb-4 font-mono text-[11px] leading-relaxed text-muted-foreground">
+            <pre className="ph-no-capture overflow-x-auto bg-muted/30 px-4 pb-4 font-mono text-[11px] leading-relaxed text-muted-foreground">
               <code>{fix.before}</code>
             </pre>
           </div>
@@ -771,17 +887,20 @@ function FixCard({
               size="xs"
               variant="outline"
               className="gap-1.5"
+              aria-label={
+                copied === "after" ? "Fix template copied" : "Copy fix template"
+              }
               onClick={() => copy(fix.after, "after")}
             >
               {copied === "after" ? (
-                <Check className="h-3.5 w-3.5" />
+                <Check className="h-3.5 w-3.5" aria-hidden />
               ) : (
-                <Copy className="h-3.5 w-3.5" />
+                <Copy className="h-3.5 w-3.5" aria-hidden />
               )}
               {copied === "after" ? "Copied" : "Copy"}
             </Button>
           </div>
-          <pre className="overflow-x-auto bg-emerald-500/5 px-4 pb-4 font-mono text-[11px] leading-relaxed text-foreground/85">
+          <pre className="ph-no-capture overflow-x-auto bg-emerald-500/5 px-4 pb-4 font-mono text-[11px] leading-relaxed text-foreground/85">
             <code>{fix.after}</code>
           </pre>
         </div>

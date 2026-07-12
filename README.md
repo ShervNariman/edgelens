@@ -2,7 +2,7 @@
 
 Local deterministic pre-flight checker for generated React/shadcn UI.
 
-EdgeLens helps catch missing loading, empty, error, disabled, focus, active, and selected-style states — plus common shadcn/Radix accessibility gotchas — before components ship. Paste or load a React example, run the analyzer, force non-happy-path states in the preview, and review rule-based findings. Everything runs client-side; no backend, database, or product-side LLM calls.
+EdgeLens helps catch missing loading, empty, error, disabled, focus, active, and selected-style states — plus common shadcn/Radix accessibility gotchas — before components ship. Open a local `.tsx`/`.jsx` file, paste source, or load a React example, run the analyzer, force non-happy-path states in the preview, and review rule-based findings. Everything runs client-side; no backend, database, or product-side LLM calls.
 
 **Demo story:** The component looked done on the happy path until EdgeLens forced the states AI forgot.
 
@@ -87,11 +87,12 @@ npx tsx scripts/smoke-examples.mts
 
 ## Typical workflow
 
-1. Paste a React/shadcn component or load a built-in example.
-2. Run the analyzer.
-3. Review **State completeness** first, then Static JSX/shadcn, Preview DOM, and Fixes.
-4. Force supported interaction states in the live preview.
-5. Copy relevant fix templates and apply them manually in your source.
+1. Open a local `.tsx` / `.jsx` / `.ts` / `.js` component (drag/drop or file picker), paste source, or load a built-in example.
+2. Confirm the privacy note: source stays in the browser — never uploaded.
+3. Run the analyzer.
+4. Review **State completeness** first, then Static JSX/shadcn, Preview DOM, and Fixes.
+5. Force supported interaction states in the live preview (simulated / type-aware — not arbitrary JSX execution).
+6. Copy relevant fix templates and apply them manually in your source.
 
 ## Tech stack
 

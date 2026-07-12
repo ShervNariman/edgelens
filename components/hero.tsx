@@ -82,7 +82,7 @@ export function Hero({ onTryDemo, compact = false }: HeroProps) {
               compact ? "h-8" : "h-9"
             )}
           >
-            Paste your component
+            Open local file
           </a>
         </div>
 

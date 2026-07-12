@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { runAxeOnElement } from "@/lib/axe-runner";
 import { buildPreviewMeta, type PreviewMeta } from "@/lib/preview-meta";
+import { PREVIEW_SIMULATION_NOTE } from "@/lib/product-copy";
 import { cn } from "@/lib/utils";
 import {
   AlertCircle,
@@ -178,6 +179,10 @@ export function PreviewPane({
               </span>
             )}
           </p>
+          <p className="mt-1 max-w-xl text-[11px] leading-relaxed text-muted-foreground">
+            {PREVIEW_SIMULATION_NOTE} Use the chips below to force Error,
+            Disabled, Loading, and other non-happy-path states.
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           {meta.a11yIssues.length > 0 && (
@@ -212,6 +217,10 @@ export function PreviewPane({
         </div>
 
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Force preview state">
+          <span className="sr-only">
+            Force a preview state. Sky-outlined chips are simulated only because
+            they were not found in source.
+          </span>
           {SIMULATABLE.map((state) => {
             const isGap = notImplemented.has(state);
             const isSelected = forcedState === state;
@@ -305,7 +314,8 @@ export function PreviewPane({
         <div className="flex flex-1 items-center justify-center">
           {!hasCode ? (
             <p className="text-center text-sm text-muted-foreground">
-              Paste code and analyze, then force states the happy path hid.
+              Open a local file or paste code, analyze, then force states the
+              happy path hid.
             </p>
           ) : (
             <div

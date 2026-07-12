@@ -8,7 +8,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
-    "audit:public": "node scripts/public-safety-scan.mjs"
+    "audit:public": "node scripts/public-safety-scan.mjs",
+    "test:local-file": "node scripts/test-local-file-input.mjs"
   },
   "dependencies": {
     "@babel/parser": "^8.0.4",
