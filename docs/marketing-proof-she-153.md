@@ -16,8 +16,8 @@ visible.
 - Analysis report score + state completeness hero summary
 - Real findings (not empty marketing copy)
 
-**Save as:** `docs/assets/edgelens-she-153-product.png` (or artifacts folder for
-the PR walkthrough).
+**Save as:** `docs/assets/edgelens-she-153-product.webp` (captured from the live
+analyzer after Analyze + forced `loading` on this branch).
 
 ## 15–22 second real workflow shot list
 
