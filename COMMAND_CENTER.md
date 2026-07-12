@@ -4,7 +4,7 @@ Lightweight operating dashboard for the EdgeLens MVP launch sprint. Keep this fi
 
 **Manager loop:** see [`docs/manager-loop.md`](docs/manager-loop.md) for the full operating playbook (includes **code health and stability review**). Visual dashboard: `/internal/command-center` (data in `lib/command-center-data.ts`).
 
-**Snapshot date:** 2026-07-10 (SHE-16 snapshot refresh · PR #17)
+**Snapshot date:** 2026-07-12 (SHE-148 Milestone 1 baseline in progress) · Report: [`docs/milestone-1.md`](docs/milestone-1.md)
 
 ## Mission
 
@@ -27,7 +27,8 @@ Help React teams run a deterministic, client-side pre-flight check on AI-generat
 | Launch assets | Done | `docs/launch.md` merged (SHE-10); SHE-19 framing on `main`. | Replace `<repo link>` / `<demo link>` placeholders before public post. |
 | README/repo polish | Done | Launch-ready README + prior art on `main` (SHE-9 / SHE-19). | Spot-check links/commands before announce. |
 | MVP positioning | Done | SHE-19 merged via PR #16. | Keep UI + docs aligned. |
-| Release checklist | Active | SHE-16 / PR #17 walks verified boxes; human launch gates remain. | Merge PR #17; then demo, URLs, nariman.dev, public launch. |
+| Release checklist | Active | Human launch gates remain; SHE-148 hardens CI/tests/license. | Finish SHE-148 QA; then demo, URLs, nariman.dev, public launch. |
+| Milestone 1 baseline | Active | SHE-148 — Vitest, determinism×5, CodeQL/Dependabot, MIT, isolation. | Independent QA + senior code-health review (do not merge early). |
 | Command center | Done | Docs (SHE-11) + visual route (SHE-12) on `main`. | Keep tables + `lib/command-center-data.ts` synced after each merge. |
 | Manager ops loop | Done | SHE-15 + SHE-21 code-health review on `main` (PR #14 / #16). | Run loop + code health pass after each sprint change. |
 | Light UI | Done | MVP forced to light mode (SHE-14); reconfirmed in SHE-16. | Protect in future PRs. |
@@ -54,11 +55,11 @@ Help React teams run a deterministic, client-side pre-flight check on AI-generat
 
 | Issue | Work | Status | Owner/agent | Review focus |
 | --- | --- | --- | --- | --- |
-| SHE-16 | Final local QA + release checklist | In progress | Cursor | Active PR #17 — snapshot truth + verified checklist boxes. |
+| SHE-148 | Milestone 1 production baseline | In progress | Cursor | Tests, CI, determinism, license, isolation, CodeQL/Dependabot. |
 
 ## Next priorities
 
-1. Merge SHE-16 / PR #17 (open PRs → 0 after merge).
+1. Complete independent QA on SHE-148 (commands in `docs/milestone-1.md`); do not merge until signed off.
 2. Record the launch demo via `/record/edgelens` (forced-states story) and approve screenshots.
 3. Replace launch URL placeholders and complete nariman.dev readiness.
 4. Run remaining public-launch checklist boxes only after demo + URLs clear.

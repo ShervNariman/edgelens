@@ -24,7 +24,8 @@ WCAG checker, Storybook replacement, or axe alternative.
 - In-app snapshot: `/internal/command-center` (`lib/command-center-data.ts`)
 - One Linear issue → one branch → one PR. Do not run Cursor and Codex on the same files at once.
 - Coding PRs must document: `npm run audit:public`, `npm run lint`, `npm run typecheck`,
-  `npm run build`.
+  `npm test`, `npm run test:determinism`, `npm run build`.
+- Milestone 1 baseline notes: `docs/milestone-1.md`.
 
 ## Cursor Cloud specific instructions
 

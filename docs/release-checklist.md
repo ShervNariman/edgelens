@@ -54,6 +54,9 @@ Operational checklist for deciding when EdgeLens is ready for public launch. Che
 
 - [x] `npm run lint` passes.
 - [x] `npm run typecheck` passes.
+- [ ] `npm test` passes (SHE-148 harness).
+- [ ] `npm run test:determinism` passes (five-repeat stable outputs).
+- [ ] `npm run audit:public` passes (secrets + runtime isolation).
 - [x] `npm run build` passes or any environment limitation is documented.
 - [x] Manual smoke pass covers built-in examples.
 - [x] Preview DOM and accessibility findings are reviewed for clarity (supporting layer).

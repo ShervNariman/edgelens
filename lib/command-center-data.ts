@@ -90,7 +90,7 @@ export interface CommandCenterData {
 }
 
 export const commandCenterData: CommandCenterData = {
-  updatedAt: "2026-07-10",
+  updatedAt: "2026-07-12",
   sprintName: "EdgeLens MVP Launch Sprint",
   sprintGoal:
     "Ship a demo-ready pre-flight checker with state completeness as the hero, trustworthy report layers, recording route, launch docs, and polished README.",
@@ -98,31 +98,31 @@ export const commandCenterData: CommandCenterData = {
     {
       id: "issues",
       label: "Issue progress",
-      value: "12 / 13",
-      detail: "SHE-16 active · SHE-7/19/21 done",
-      progress: 92,
-      tone: "success",
+      value: "12 / 14",
+      detail: "SHE-148 active · Milestone 1 baseline",
+      progress: 86,
+      tone: "warning",
     },
     {
       id: "launch",
       label: "Launch readiness",
-      value: "94%",
-      detail: "Engineering clear · human launch gates remain",
-      progress: 94,
+      value: "90%",
+      detail: "SHE-148 hardening in flight · human gates remain",
+      progress: 90,
       tone: "warning",
     },
     {
       id: "blockers",
       label: "Open blockers",
-      value: "4",
-      detail: "Demo · URLs · nariman.dev · public launch",
+      value: "5",
+      detail: "SHE-148 QA · demo · URLs · nariman.dev · launch",
       tone: "warning",
     },
     {
       id: "prs",
       label: "Open PRs",
-      value: "1",
-      detail: "PR #17 SHE-16 · → 0 after merge",
+      value: "1+",
+      detail: "SHE-148 Milestone 1 baseline",
       tone: "warning",
     },
   ],
@@ -220,10 +220,10 @@ export const commandCenterData: CommandCenterData = {
     {
       id: "SHE-16",
       title: "Final local QA and release checklist",
-      status: "in_progress",
+      status: "done",
       owner: "Cursor",
       priority: "P0",
-      notes: "Active PR #17 — only open PR; → 0 after merge",
+      notes: "Release checklist + QA evidence on main; human launch gates remain",
       href: "https://linear.app/sherv-nariman/issue/SHE-16",
     },
     {
@@ -244,8 +244,27 @@ export const commandCenterData: CommandCenterData = {
       notes: "Merged via PR #16 — manager-loop code-health section",
       href: "https://linear.app/sherv-nariman/issue/SHE-21",
     },
+    {
+      id: "SHE-148",
+      title: "Milestone 1 — production baseline, test harness, repo hardening",
+      status: "in_progress",
+      owner: "Cursor",
+      priority: "P0",
+      notes:
+        "Vitest + determinism×5 + CI + MIT + isolation + CodeQL/Dependabot; docs/milestone-1.md",
+      href: "https://linear.app/sherv-nariman/issue/SHE-148",
+    },
   ],
   blockers: [
+    {
+      id: "b7",
+      title: "SHE-148 independent QA + code-health sign-off",
+      severity: "high",
+      owner: "Sherv",
+      relatedIssue: "SHE-148",
+      detail:
+        "Do not merge until required commands, browser smoke, and senior code-health review pass.",
+    },
     {
       id: "b3",
       title: "Launch demo capture not recorded",
@@ -253,7 +272,7 @@ export const commandCenterData: CommandCenterData = {
       owner: "Sherv",
       relatedIssue: "SHE-8",
       detail:
-        "/record/edgelens is stable and SHE-16-verified; human recording/screenshots still pending approval.",
+        "/record/edgelens is stable; human recording/screenshots still pending approval.",
     },
     {
       id: "b4",
@@ -450,10 +469,10 @@ export const commandCenterData: CommandCenterData = {
       id: "cursor",
       name: "Cursor",
       role: "High-context UI & implementation",
-      focus: "SHE-16 release checklist snapshot (PR #17)",
-      activeIssues: ["SHE-16"],
+      focus: "SHE-148 Milestone 1 production baseline",
+      activeIssues: ["SHE-148"],
       capacity: "focused",
-      nextUp: "Land PR #17; open PRs → 0",
+      nextUp: "Independent QA + senior code-health review; do not merge early",
     },
     {
       id: "codex",
@@ -468,9 +487,9 @@ export const commandCenterData: CommandCenterData = {
   nextActions: [
     {
       id: "a0",
-      action: "Merge SHE-16 / PR #17 (open PRs → 0)",
+      action: "Complete SHE-148 independent QA and code-health sign-off",
       owner: "Sherv",
-      relatedIssue: "SHE-16",
+      relatedIssue: "SHE-148",
       urgency: "now",
     },
     {
