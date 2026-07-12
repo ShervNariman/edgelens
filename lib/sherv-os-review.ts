@@ -1,4 +1,5 @@
 import type { ShervOSReviewSummary } from "@/lib/sherv-os-summary";
+export type { ShervOSReviewSummary } from "@/lib/sherv-os-summary";
 
 const REQUEST_TIMEOUT_MS = 60_000;
 
