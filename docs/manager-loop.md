@@ -53,10 +53,14 @@ If Linear, GitHub, and the command center disagree, treat **GitHub `main` + open
    - `@cursor` for frontend / product / UI
    - `@codex` for docs / repo / checklists
 7. **Require validation on every coding PR:**
+   - `npm run audit:public`
    - `npm run lint`
    - `npm run typecheck`
+   - `npm test`
+   - `npm run test:determinism`
    - `npm run build`
    - Manual route checks where applicable (`/`, `/analyzer`, `/record/edgelens`, `/internal/command-center`)
+   - See `docs/milestone-1.md` for the production-baseline command set (SHE-148).
 8. **Run a code health and stability review** (see below) before merge/launch recommendations.
 9. **Recommend merge / no-merge** with a one-line rationale.
 10. **Update next actions** in Linear + command center in the same pass.

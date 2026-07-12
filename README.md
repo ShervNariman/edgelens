@@ -8,9 +8,11 @@ EdgeLens helps catch missing loading, empty, error, disabled, focus, active, and
 
 **MVP status:** EdgeLens is a rule-based pre-flight checker for local design and engineering review. It can miss issues and produce false positives. It does not certify WCAG compliance or replace manual keyboard testing, screen-reader testing, axe, Storybook, or full QA.
 
-## Screenshot placeholder
+## Product preview
 
-![EdgeLens screenshot placeholder](docs/screenshot-placeholder.svg)
+![EdgeLens analyzer product mock](docs/assets/edgelens-analyzer.svg)
+
+> A photographic launch screenshot from `/record/edgelens` can replace this SVG mock once an approved capture is available (tracked as a launch-assets follow-up).
 
 ## Why EdgeLens exists
 
@@ -72,17 +74,16 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## Local development commands
 
 ```bash
-npm run dev       # Start the Next.js dev server with Turbopack
-npm run lint      # Run ESLint
-npm run typecheck # Run TypeScript without emitting files
-npm run build     # Build the production app with Turbopack
-npm run start     # Serve a completed production build
-```
-
-A manual smoke script also exists for the built-in examples:
-
-```bash
-npx tsx scripts/smoke-examples.mts
+npm ci                 # Clean install from the lockfile
+npm run dev            # Start the Next.js dev server with Turbopack
+npm run lint           # Run ESLint
+npm run typecheck      # Run TypeScript without emitting files
+npm test               # Vitest unit + analyzer regression tests
+npm run test:determinism  # Five-repeat deterministic output check
+npm run smoke          # Built-in example smoke (pinned local tsx)
+npm run audit:public   # Secrets + runtime cross-product isolation scan
+npm run build          # Build the production app with Turbopack
+npm run start          # Serve a completed production build
 ```
 
 ## Typical workflow
@@ -137,4 +138,4 @@ Contributions are welcome, especially focused state rules, shadcn/Radix checks, 
 
 ## License
 
-License placeholder. Add the final open-source license before public launch.
+[MIT](./LICENSE) © 2026 Sherveen Nariman

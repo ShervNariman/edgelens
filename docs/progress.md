@@ -2,7 +2,7 @@
 
 Use this table as the source of truth for launch-sprint issue status across Linear, GitHub, Cursor, and Codex. Keep rows short so future agents can scan quickly.
 
-**Snapshot date:** 2026-07-10 (SHE-16 · PR #17) · Manager playbook: [`docs/manager-loop.md`](manager-loop.md)
+**Snapshot date:** 2026-07-12 (SHE-148 in progress) · Manager playbook: [`docs/manager-loop.md`](manager-loop.md) · Milestone 1: [`docs/milestone-1.md`](milestone-1.md)
 
 | Issue | Workstream | Status | Owner/agent | PR status | Notes | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -19,6 +19,7 @@ Use this table as the source of truth for launch-sprint issue status across Line
 | [SHE-16](https://linear.app/sherv-nariman/issue/SHE-16) | Final local QA + release checklist | In progress | Cursor | Active PR #17 | Verified checklist + snapshot refresh; only open PR. | Merge PR #17 (open PRs → 0). |
 | [SHE-19](https://linear.app/sherv-nariman/issue/SHE-19/edgelens-narrow-mvp-positioning-around-state-completeness-pre) | MVP positioning (state completeness) | Done | Cursor | Merged #16 | Pre-flight state checks hero; a11y supporting; limitation copy; prior art. | Keep positioning stable. |
 | SHE-21 | Code health & stability review | Done | Cursor | Merged #16 | Manager-loop code-health section on `main`. | Use on PR QA passes. |
+| [SHE-148](https://linear.app/sherv-nariman/issue/SHE-148) | Milestone 1 production baseline | In progress | Cursor | Open | Vitest, determinism×5, CI, MIT, isolation, CodeQL/Dependabot. | Independent QA + senior code-health review; do not merge until signed off. |
 
 ## Recommended Linear views
 

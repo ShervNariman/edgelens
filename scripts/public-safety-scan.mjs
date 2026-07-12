@@ -20,8 +20,29 @@ const secretPatterns = [
   ["Resend key", /\bre_[A-Za-z0-9]{20,}\b/],
 ];
 
+/** Runtime app surfaces only — docs/history may mention sibling products for governance. */
 const runtimePath = /^(app|components|lib|public|styles)\//;
-const otherProductNames = ["headroom", "slopcheck", "popover-fit", "hover-bridge"];
+
+/**
+ * Sibling / wrong-repo product terminology that must not leak into EdgeLens runtime code.
+ * Prefer specific multi-token forms for Release Room to avoid false positives on "release".
+ */
+const otherProductNames = [
+  "headroom",
+  "slopcheck",
+  "popover-fit",
+  "hover-bridge",
+  "motionguard",
+  "motion-guard",
+  "motion_guard",
+  "release room",
+  "releaseroom",
+  "release-room",
+  "release_room",
+  "xproductinsights",
+  "x-product-insights",
+  "sherv-website",
+];
 
 function git(...args) {
   return execFileSync("git", args, {
@@ -54,7 +75,9 @@ for (const path of trackedFiles) {
   if (runtimePath.test(path)) {
     const lower = content.toLowerCase();
     for (const product of otherProductNames) {
-      if (lower.includes(product)) failures.push(`cross-product runtime reference (${product}) in ${path}`);
+      if (lower.includes(product)) {
+        failures.push(`cross-product runtime reference (${product}) in ${path}`);
+      }
     }
   }
 }

@@ -24,7 +24,8 @@ WCAG checker, Storybook replacement, or axe alternative.
 - In-app snapshot: `/internal/command-center` (`lib/command-center-data.ts`)
 - One Linear issue → one branch → one PR. Do not run Cursor and Codex on the same files at once.
 - Coding PRs must document: `npm run audit:public`, `npm run lint`, `npm run typecheck`,
-  `npm run build`.
+  `npm test`, `npm run test:determinism`, `npm run build`.
+- Milestone 1 baseline notes: `docs/milestone-1.md`.
 
 ## Cursor Cloud specific instructions
 
@@ -32,7 +33,7 @@ WCAG checker, Storybook replacement, or axe alternative.
   `package.json` (`dev`, `build`, `start`, `lint`, `typecheck`, `audit:public`).
 - Dev server: `npm run dev` serves on `http://localhost:3000` (Next.js + Turbopack). Use this
   for development, not `npm run start` (which requires a prior `npm run build`).
-- A manual smoke script exists at `scripts/smoke-examples.mts` (run via `npx tsx`) and exercises
-  the analysis engine over built-in examples.
+- Analyzer smoke: `npm run smoke` (`scripts/smoke-examples.ts` via pinned local `tsx`).
+- Determinism regression: `npm run test:determinism` (five repeats over examples + recovery cases).
 - `npm install` may print an `EBADENGINE` warning because `@babel/*@8` requests Node `>=22.18`;
   use a current Node 22 release for local work.
