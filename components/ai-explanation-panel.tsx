@@ -48,6 +48,7 @@ export function AIExplanationPanel({ report }: AIExplanationPanelProps) {
   }, [report?.id]);
 
   if (!report) return null;
+  const activeReport = report;
 
   async function handleExplain() {
     setState("loading");
@@ -59,7 +60,7 @@ export function AIExplanationPanel({ report }: AIExplanationPanelProps) {
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
         body: JSON.stringify({
-          report: buildShervOSReviewSummary(report),
+          report: buildShervOSReviewSummary(activeReport),
         }),
       });
 
