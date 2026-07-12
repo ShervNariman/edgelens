@@ -118,10 +118,10 @@ At a high level:
 
 Near-term (in scope for the MVP wedge):
 
-- Broaden coverage for additional shadcn/ui and Radix interaction patterns.
-- Improve confidence labels so findings are easier to triage.
-- Add more built-in examples that represent realistic product components.
-- Expand fix templates with before/after examples.
+- ~~Broaden coverage for additional shadcn/ui and Radix interaction patterns.~~ (SHE-150)
+- ~~Improve confidence labels so findings are easier to triage.~~ (SHE-150)
+- ~~Add more built-in examples that represent realistic product components.~~ (SHE-150 · Team invite)
+- ~~Expand fix templates with before/after examples.~~ (SHE-150)
 - Improve preview-state controls for common component variants.
 
 Saved for later (out of MVP scope):

@@ -26,6 +26,7 @@ export interface PreviewMeta {
 
 const TYPE_PRIORITY: DetectedComponentType[] = [
   "Dialog",
+  "Sheet",
   "Form",
   "Select",
   "DropdownMenu",
@@ -54,6 +55,7 @@ export function inferPrimaryType(
 
   // Source heuristics when AST detection is thin
   if (/<Dialog[\s>]/.test(source) || /DialogContent/.test(source)) return "Dialog";
+  if (/<Sheet[\s>]/.test(source) || /SheetContent/.test(source)) return "Sheet";
   if (/<Select[\s>]/.test(source) || /SelectTrigger/.test(source)) return "Select";
   if (/DropdownMenu/.test(source)) return "DropdownMenu";
   if (/<Card[\s>]/.test(source) || /CardContent/.test(source)) return "Card";

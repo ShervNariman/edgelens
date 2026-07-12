@@ -3,6 +3,7 @@
 import type {
   AnalysisIssue,
   AnalysisReport,
+  IssueConfidence,
   IssueSeverity,
   IssueSource,
   SuggestedFix,
@@ -171,6 +172,8 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
     componentName,
     primaryType,
     parseErrors,
+    checkStatuses = [],
+    locationsUnreliable = false,
   } = report;
 
   const missingRequired = stateCoverage.filter((s) => s.required && !s.present);
@@ -346,7 +349,8 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
           )}
 
           <p className="text-xs text-muted-foreground">
-            Green = detected in source · Blue = not implemented · Gray = optional
+            Green = detected in source · Blue = required/recommended gap · Gray =
+            optional
           </p>
           <div className="grid gap-2.5 sm:grid-cols-2">
             {stateCoverage.map((s) => (
@@ -356,9 +360,11 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
                   "rounded-xl border px-4 py-3.5 transition-colors",
                   s.present
                     ? "border-emerald-500/30 bg-emerald-500/5"
-                    : s.required
+                    : s.requirement === "required"
                       ? "border-sky-500/30 bg-sky-500/8"
-                      : "border-border bg-muted/20"
+                      : s.requirement === "recommended"
+                        ? "border-sky-500/20 bg-sky-500/5"
+                        : "border-border bg-muted/20"
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -368,15 +374,17 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
                     className={cn(
                       "text-[10px]",
                       !s.present &&
-                        s.required &&
+                        s.requirement !== "optional" &&
                         "border-sky-500/30 text-sky-800 dark:text-sky-200"
                     )}
                   >
                     {s.present
                       ? "in source"
-                      : s.required
-                        ? "not implemented"
-                        : "optional"}
+                      : s.requirement === "required"
+                        ? "required"
+                        : s.requirement === "recommended"
+                          ? "recommended"
+                          : "optional"}
                   </Badge>
                 </div>
                 {s.evidence ? (
@@ -391,6 +399,27 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
               </div>
             ))}
           </div>
+
+          {checkStatuses.length > 0 && (
+            <div className="rounded-xl border border-border/60 bg-muted/15 px-4 py-3">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Checks skipped / inconclusive
+              </p>
+              <ul className="mt-2 space-y-2">
+                {checkStatuses.map((c) => (
+                  <li key={c.id} className="text-xs leading-relaxed text-muted-foreground">
+                    <span className="font-mono text-[10px] text-foreground/80">
+                      {c.status}
+                    </span>
+                    {" · "}
+                    <span className="text-foreground/85">{c.label}</span>
+                    {" — "}
+                    {c.reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="static" className="mt-4 space-y-4">
@@ -437,6 +466,12 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
               <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
                 Parse notes
               </p>
+              {locationsUnreliable && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Source locations are omitted because parser recovery makes them
+                  unreliable.
+                </p>
+              )}
               <div className="mt-2 space-y-1 font-mono text-xs text-muted-foreground">
                 {parseErrors.map((e) => (
                   <p key={e}>{e}</p>
@@ -582,12 +617,28 @@ export function ResultsPanel({ report, isAnalyzing }: ResultsPanelProps) {
   );
 }
 
+function confidenceLabel(confidence: IssueConfidence): string {
+  return confidence;
+}
+
+function confidenceBadgeClass(confidence: IssueConfidence): string {
+  if (confidence === "high") {
+    return "border-foreground/20 bg-foreground/5 text-foreground/80";
+  }
+  if (confidence === "medium") {
+    return "border-border bg-muted/40 text-muted-foreground";
+  }
+  return "border-dashed border-border/70 bg-transparent text-muted-foreground/80";
+}
+
 function IssueCard({ issue }: { issue: AnalysisIssue }) {
+  const deEmphasized = issue.confidence === "low";
   return (
     <article
       className={cn(
         "rounded-xl border px-4 py-3 transition-colors",
-        severityClass(issue.severity)
+        severityClass(issue.severity),
+        deEmphasized && "opacity-60"
       )}
     >
       <div className="flex items-start gap-3">
@@ -596,9 +647,25 @@ function IssueCard({ issue }: { issue: AnalysisIssue }) {
         </span>
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex flex-wrap items-center gap-1.5">
-            <h3 className="text-sm font-medium text-foreground">{issue.title}</h3>
+            <h3
+              className={cn(
+                "text-sm font-medium",
+                deEmphasized ? "text-foreground/75" : "text-foreground"
+              )}
+            >
+              {issue.title}
+            </h3>
             <Badge variant="outline" className="font-mono text-[10px]">
               {severityLabel(issue.severity)}
+            </Badge>
+            <Badge
+              variant="outline"
+              className={cn(
+                "font-mono text-[10px]",
+                confidenceBadgeClass(issue.confidence)
+              )}
+            >
+              conf:{confidenceLabel(issue.confidence)}
             </Badge>
             <Badge
               variant="outline"
@@ -606,6 +673,11 @@ function IssueCard({ issue }: { issue: AnalysisIssue }) {
             >
               {sourceLabel(issue.source)}
             </Badge>
+            {issue.requirement !== "required" && (
+              <Badge variant="outline" className="font-mono text-[10px] text-muted-foreground">
+                {issue.requirement}
+              </Badge>
+            )}
           </div>
           <p className="text-sm leading-relaxed text-muted-foreground">
             {issue.description}
@@ -613,6 +685,9 @@ function IssueCard({ issue }: { issue: AnalysisIssue }) {
           <p className="text-xs text-foreground/80">
             <span className="text-muted-foreground">Suggestion: </span>
             {issue.suggestion}
+          </p>
+          <p className="truncate font-mono text-[10px] text-muted-foreground/90">
+            signal: {issue.evidence}
           </p>
         </div>
       </div>
@@ -730,6 +805,16 @@ function FixCard({
               {suggestion}
             </dd>
           </div>
+          {fix.adaptNote && (
+            <div>
+              <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Adapt manually
+              </dt>
+              <dd className="mt-0.5 leading-relaxed text-muted-foreground">
+                {fix.adaptNote}
+              </dd>
+            </div>
+          )}
         </dl>
       </div>
 
