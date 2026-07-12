@@ -21,6 +21,8 @@ export interface IntegrationEnv {
   vercelProjectId: string | null;
   vercelWebhookSecret: string | null;
   webhookSecret: string | null;
+  /** Editor/agent evidence HMAC secret (falls back to webhookSecret) */
+  evidenceSecret: string | null;
   /** Max accepted webhook body size in bytes (default 1 MiB) */
   webhookMaxBodyBytes: number;
   /** Reject provider events older than this many seconds (replay protection) */
@@ -72,6 +74,9 @@ export function getIntegrationEnv(
     vercelProjectId: readEnv("VERCEL_PROJECT_ID"),
     vercelWebhookSecret: readEnv("VERCEL_WEBHOOK_SECRET"),
     webhookSecret: readEnv("RELEASE_ROOM_WEBHOOK_SECRET"),
+    evidenceSecret:
+      readEnv("RELEASE_ROOM_EVIDENCE_SECRET") ??
+      readEnv("RELEASE_ROOM_WEBHOOK_SECRET"),
     webhookMaxBodyBytes: readInt(
       "RELEASE_ROOM_WEBHOOK_MAX_BODY_BYTES",
       DEFAULT_WEBHOOK_MAX_BODY_BYTES
@@ -134,11 +139,25 @@ export function githubAppWriteConfigured(
   );
 }
 
+export function evidenceConfigured(
+  env: IntegrationEnv = getIntegrationEnv()
+): boolean {
+  return Boolean(env.evidenceSecret || env.webhookSecret);
+}
+
 /** Summarize which providers are live vs fixture — safe for logs/UI (no secrets). */
 export function describeProviderModes(
   env: IntegrationEnv = getIntegrationEnv()
 ): Record<
-  "github" | "linear" | "vercel" | "webhook" | "githubWebhook" | "linearWebhook" | "vercelWebhook" | "githubChecksPublish",
+  | "github"
+  | "linear"
+  | "vercel"
+  | "webhook"
+  | "editor"
+  | "githubWebhook"
+  | "linearWebhook"
+  | "vercelWebhook"
+  | "githubChecksPublish",
   "live" | "fixture" | "disabled"
 > {
   return {
@@ -146,6 +165,7 @@ export function describeProviderModes(
     linear: linearLiveEnabled(env) ? "live" : "fixture",
     vercel: vercelLiveEnabled(env) ? "live" : "fixture",
     webhook: webhookConfigured(env) ? "live" : "disabled",
+    editor: evidenceConfigured(env) ? "live" : "disabled",
     githubWebhook: githubWebhookConfigured(env) ? "live" : "disabled",
     linearWebhook: linearWebhookConfigured(env) ? "live" : "disabled",
     vercelWebhook: vercelWebhookConfigured(env) ? "live" : "disabled",

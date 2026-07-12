@@ -6,6 +6,14 @@ import type {
 } from "../types";
 import { IntegrationError } from "../types";
 import { hashPayload } from "../secrets";
+import {
+  githubCheckRunKey,
+  githubChecksKey,
+  githubCheckSuiteKey,
+  githubPrKey,
+  githubPushKey,
+  githubReviewKey,
+} from "../evidence-keys";
 
 type Json = Record<string, unknown>;
 
@@ -52,14 +60,45 @@ function reviewOutcome(state: string | null): IntegrationEvidenceOutcome {
   return "pending";
 }
 
-function prOutcome(action: string | null, merged: boolean, state: string | null): IntegrationEvidenceOutcome {
-  if (merged || action === "closed" && (state === "closed" || merged)) {
+function prOutcome(
+  action: string | null,
+  merged: boolean,
+  state: string | null
+): IntegrationEvidenceOutcome {
+  if (merged || (action === "closed" && (state === "closed" || merged))) {
     return merged ? "pass" : "fail";
   }
-  if (action === "opened" || action === "synchronize" || action === "reopened" || state === "open") {
+  if (
+    action === "opened" ||
+    action === "synchronize" ||
+    action === "reopened" ||
+    state === "open"
+  ) {
     return "pending";
   }
   return "pending";
+}
+
+function firstPrNumber(...candidates: unknown[]): number | null {
+  for (const candidate of candidates) {
+    if (typeof candidate === "number" && Number.isFinite(candidate)) return candidate;
+    if (Array.isArray(candidate) && candidate.length > 0) {
+      const first = asObj(candidate[0]);
+      const number = asNumber(first?.number);
+      if (number != null) return number;
+    }
+  }
+  return null;
+}
+
+function repositorySlug(payload: Json): string | null {
+  const repo = asObj(payload.repository);
+  const full = asString(repo?.full_name);
+  if (full) return full;
+  const owner = asString(asObj(repo?.owner)?.login);
+  const name = asString(repo?.name);
+  if (owner && name) return `${owner}/${name}`;
+  return null;
 }
 
 export interface GitHubNormalizeInput {
@@ -73,6 +112,7 @@ export interface GitHubNormalizeInput {
 /**
  * Normalize GitHub webhook events into evidence items.
  * Supported: pull_request, check_suite, check_run, pull_request_review, push.
+ * Check suite/run events that resolve a PR use canonical `github:checks:{pr}`.
  */
 export function normalizeGitHubEvent(
   input: GitHubNormalizeInput
@@ -93,16 +133,20 @@ export function normalizeGitHubEvent(
   const evidence: NormalizedEvidenceItem[] = [];
   const sourceLinks: SourceLink[] = [];
   let eventTimestamp: string | null = null;
-  let releaseId = input.releaseId ?? null;
+  const releaseId = input.releaseId ?? null;
+  const repository = repositorySlug(payload);
+  let prNumber: number | null = null;
   let metadata: Record<string, unknown> = {
     event: eventType,
     action: asString(payload.action),
+    repository,
   };
 
   switch (eventType) {
     case "pull_request": {
       const pr = asObj(payload.pull_request);
       const number = asNumber(pr?.number);
+      prNumber = number;
       const htmlUrl = asString(pr?.html_url);
       const title = asString(pr?.title) ?? `Pull request #${number ?? "?"}`;
       const action = asString(payload.action);
@@ -110,12 +154,9 @@ export function normalizeGitHubEvent(
       const state = asString(pr?.state);
       eventTimestamp =
         asString(pr?.updated_at) ?? asString(pr?.created_at) ?? now;
-      if (number != null) {
-        releaseId = releaseId ?? `pr-${number}`;
-      }
       if (htmlUrl) sourceLinks.push({ label: "Pull request", url: htmlUrl });
       evidence.push({
-        id: `github:pr:${number ?? input.deliveryId}`,
+        id: githubPrKey(number ?? input.deliveryId),
         provider: "github",
         category: "code",
         outcome: prOutcome(action, merged, state),
@@ -141,17 +182,24 @@ export function normalizeGitHubEvent(
       const conclusion = asString(suite?.conclusion);
       const status = asString(suite?.status);
       const htmlUrl = asString(suite?.url);
+      prNumber = firstPrNumber(suite?.pull_requests, payload.pull_requests);
       eventTimestamp =
         asString(suite?.updated_at) ?? asString(suite?.created_at) ?? now;
       if (htmlUrl) sourceLinks.push({ label: "Check suite", url: htmlUrl });
       evidence.push({
-        id: `github:check_suite:${id}`,
+        id:
+          prNumber != null
+            ? githubChecksKey(prNumber)
+            : githubCheckSuiteKey(id),
         provider: "github",
         category: "test",
         outcome: outcomeFromConclusion(conclusion, status),
-        title: `Check suite ${status ?? "updated"}`,
+        title:
+          prNumber != null
+            ? `Required checks (suite) for PR #${prNumber}`
+            : `Check suite ${status ?? "updated"}`,
         summary: `GitHub check_suite conclusion=${conclusion ?? "none"} status=${status ?? "unknown"}.`,
-        externalId: String(id),
+        externalId: prNumber != null ? `checks-${prNumber}` : String(id),
         sourceLinks: [...sourceLinks],
         collectedAt: now,
         metadata: {
@@ -159,8 +207,11 @@ export function normalizeGitHubEvent(
           conclusion,
           status,
           headSha: asString(suite?.head_sha),
+          suiteId: id,
+          prNumber,
         },
       });
+      metadata = { ...metadata, prNumber, suiteId: id };
       break;
     }
     case "check_run": {
@@ -170,19 +221,24 @@ export function normalizeGitHubEvent(
       const conclusion = asString(run?.conclusion);
       const status = asString(run?.status);
       const htmlUrl = asString(run?.html_url);
+      prNumber = firstPrNumber(run?.pull_requests, payload.pull_requests);
       eventTimestamp =
-        asString(run?.completed_at) ??
-        asString(run?.started_at) ??
-        now;
+        asString(run?.completed_at) ?? asString(run?.started_at) ?? now;
       if (htmlUrl) sourceLinks.push({ label: name, url: htmlUrl });
       evidence.push({
-        id: `github:check_run:${id}`,
+        id:
+          prNumber != null
+            ? githubChecksKey(prNumber)
+            : githubCheckRunKey(id),
         provider: "github",
         category: "test",
         outcome: outcomeFromConclusion(conclusion, status),
-        title: name,
+        title:
+          prNumber != null
+            ? `Required checks for PR #${prNumber}`
+            : name,
         summary: `GitHub check_run ${asString(payload.action) ?? "event"} — ${status ?? "unknown"} / ${conclusion ?? "none"}.`,
-        externalId: String(id),
+        externalId: prNumber != null ? `checks-${prNumber}` : String(id),
         sourceLinks: [...sourceLinks],
         collectedAt: now,
         metadata: {
@@ -190,22 +246,25 @@ export function normalizeGitHubEvent(
           conclusion,
           status,
           headSha: asString(run?.head_sha),
+          checkName: name,
+          checkRunId: id,
+          prNumber,
         },
       });
+      metadata = { ...metadata, prNumber, checkRunId: id };
       break;
     }
     case "pull_request_review": {
       const review = asObj(payload.review);
       const pr = asObj(payload.pull_request);
       const reviewId = asNumber(review?.id) ?? input.deliveryId;
-      const prNumber = asNumber(pr?.number);
+      prNumber = asNumber(pr?.number);
       const state = asString(review?.state);
       const htmlUrl = asString(review?.html_url) ?? asString(pr?.html_url);
       eventTimestamp = asString(review?.submitted_at) ?? now;
-      if (prNumber != null) releaseId = releaseId ?? `pr-${prNumber}`;
       if (htmlUrl) sourceLinks.push({ label: "Review", url: htmlUrl });
       evidence.push({
-        id: `github:review:${reviewId}`,
+        id: githubReviewKey(reviewId),
         provider: "github",
         category: "code",
         outcome: reviewOutcome(state),
@@ -216,6 +275,7 @@ export function normalizeGitHubEvent(
         collectedAt: now,
         metadata: { state, prNumber, action: asString(payload.action) },
       });
+      metadata = { ...metadata, prNumber };
       break;
     }
     case "push": {
@@ -224,18 +284,14 @@ export function normalizeGitHubEvent(
       const compare = asString(payload.compare);
       const commits = Array.isArray(payload.commits) ? payload.commits.length : 0;
       const headCommit = asObj(payload.head_commit);
-      eventTimestamp =
-        asString(headCommit?.timestamp) ??
-        asString(payload.repository && asObj(payload.repository)?.pushed_at) ??
-        now;
-      // GitHub pushed_at can be unix seconds — normalize if numeric string-like number on repo
+      eventTimestamp = asString(headCommit?.timestamp) ?? now;
       const repo = asObj(payload.repository);
       if (!asString(headCommit?.timestamp) && typeof repo?.pushed_at === "number") {
         eventTimestamp = new Date(repo.pushed_at * 1000).toISOString();
       }
       if (compare) sourceLinks.push({ label: "Compare", url: compare });
       evidence.push({
-        id: `github:push:${after}`,
+        id: githubPushKey(after),
         provider: "github",
         category: "code",
         outcome: "pass",
@@ -246,6 +302,10 @@ export function normalizeGitHubEvent(
         collectedAt: now,
         metadata: { ref, after, commits, forced: Boolean(payload.forced) },
       });
+      metadata = {
+        ...metadata,
+        branch: ref.replace(/^refs\/heads\//, ""),
+      };
       break;
     }
     default:

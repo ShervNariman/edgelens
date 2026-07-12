@@ -1,6 +1,10 @@
-# Release Room integrations (SHE-60 + SHE-69)
+# Release Room integrations (SHE-60 + SHE-69 + SHE-94)
 
-Adapter boundaries for GitHub, Linear, Vercel, and authenticated webhook evidence ingestion.
+Adapter boundaries for GitHub, Linear, Vercel, editor/agent, and authenticated
+webhook evidence ingestion.
+
+> Loop 1 architecture findings and residual limits:
+> [`docs/loop1-architecture.md`](./loop1-architecture.md)
 
 ## Behavior
 
@@ -11,124 +15,77 @@ Adapter boundaries for GitHub, Linear, Vercel, and authenticated webhook evidenc
 - **Duplicate delivery id** → idempotent replay returns the prior accepted evidence.
 - **Stale event** → rejected (`409`) when the provider timestamp is outside the replay window.
 - **Oversized payload** → rejected (`413`) when the body exceeds the configured byte limit.
-- **GitHub check-run publishing** → gated behind `GitHubCheckRunPublisher` and requires GitHub App installation credentials.
+- **Unmatched / ambiguous release** → rejected (`422`); evidence is never silently attached to the wrong candidate.
+- **GitHub check-run publishing** → gated behind `GitHubCheckRunPublisher` and requires GitHub App installation credentials (non-self-validating).
+
+## Setup UX
+
+1. Open [`/setup/integrations`](/setup/integrations) for required permissions per provider.
+2. Copy env vars from `.env.example` into `.env.local`.
+3. Run `GET /api/integrations/test` (or `?provider=github`) for connection probes.
+4. Confirm `GET /api/integrations/health` shows truthful `configured` / `connected` / `stale` / `degraded` / `failed` states.
+5. Register release candidates in the release registry before enabling live webhooks.
 
 ## Environment variables
 
-Copy into `.env.local` as needed:
-
 ```bash
-# Force fixtures even when live tokens exist (useful for demos/tests)
 RELEASE_ROOM_FORCE_FIXTURES=false
 
-# GitHub — repository / PR / changed files / checks / reviews (read / backfill)
 GITHUB_TOKEN=
 GITHUB_OWNER=
 GITHUB_REPO=
-# GH_TOKEN is accepted as an alias for GITHUB_TOKEN
 GITHUB_WEBHOOK_SECRET=
-# GitHub App — required only for check-run publishing writes
 GITHUB_APP_ID=
 GITHUB_APP_INSTALLATION_ID=
 GITHUB_APP_PRIVATE_KEY=
 
-# Linear — issue intent + acceptance-criteria checkboxes
 LINEAR_API_KEY=
 LINEAR_TEAM_ID=
 LINEAR_WEBHOOK_SECRET=
 
-# Vercel — deployment / preview evidence
 VERCEL_TOKEN=
 VERCEL_TEAM_ID=
 VERCEL_PROJECT_ID=
 VERCEL_WEBHOOK_SECRET=
 
-# Generic signed webhook ingestion (manual evidence)
 RELEASE_ROOM_WEBHOOK_SECRET=
+RELEASE_ROOM_EVIDENCE_SECRET=
+RELEASE_ROOM_URL=http://localhost:3000
+RELEASE_ROOM_RELEASE_ID=
 
-# Optional limits
 RELEASE_ROOM_WEBHOOK_MAX_BODY_BYTES=1048576
 RELEASE_ROOM_WEBHOOK_MAX_AGE_SECONDS=300
 ```
 
 ## HTTP endpoints
 
-### `GET|POST /api/integrations/refresh`
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET/POST | `/api/integrations/refresh` | Manual read/backfill |
+| POST | `/api/integrations/github` | GitHub signed webhook |
+| POST | `/api/integrations/linear` | Linear signed webhook |
+| POST | `/api/integrations/vercel` | Vercel signed webhook |
+| POST | `/api/integrations/webhook` | Generic / editor signed evidence |
+| GET | `/api/integrations/health` | Connection + audit + modes |
+| GET/POST | `/api/integrations/test` | Connection probes |
+| GET | `/api/integrations/setup` | Permissions + setup guides |
 
-Manual read/backfill path. Refreshes evidence for a release candidate from GitHub/Linear/Vercel adapters (or fixtures).
+## Editor / agent CLI
 
-### `POST /api/integrations/github`
-
-GitHub App-ready webhook ingress.
-
-Headers:
-
-- `X-Hub-Signature-256: sha256=<hmac-sha256-hex>`
-- `X-GitHub-Delivery: <uuid>` (idempotency key)
-- `X-GitHub-Event: pull_request | check_suite | check_run | pull_request_review | push`
-
-### `POST /api/integrations/linear`
-
-Headers:
-
-- `Linear-Signature: <hmac-sha256-hex>`
-- Optional: `Linear-Delivery`, `Linear-Timestamp`
-
-Normalizes Issue create/update payloads (including acceptance-criteria checkboxes).
-
-### `POST /api/integrations/vercel`
-
-Headers:
-
-- `x-vercel-signature: <hmac-sha1-hex>`
-- Optional: `x-vercel-id`
-
-Normalizes deployment lifecycle events into deployment + preview evidence.
-
-### `POST /api/integrations/webhook`
-
-Generic signed evidence ingestion (SHE-60, retained).
-
-Headers:
-
-- `x-release-room-signature: sha256=<hmac-sha256-hex-of-raw-body>`
-
-### `GET /api/integrations/health`
-
-Connection freshness, last event, actionable error state, recent audit records, and provider modes.
-
-## Common provider-event envelope
-
-Successful provider ingest returns a `ProviderEventEnvelope`:
-
-| Field | Meaning |
-| --- | --- |
-| `deliveryId` | Provider delivery / idempotency key |
-| `provider` | `github` \| `linear` \| `vercel` |
-| `eventType` | Native event name |
-| `payloadHash` | SHA-256 of raw body (body not stored) |
-| `evidence` | `NormalizedEvidenceItem[]` |
-| `eventTimestamp` | Provider event time (replay protection) |
-
-Audit records are appended for accepted, duplicate, rejected, stale, and oversized outcomes.
-
-## Architecture boundary
-
-GitHub **check-run publishing** stays behind `GitHubCheckRunPublisher`. Read adapters and webhook ingest do not write Checks. Publishing requires `GITHUB_APP_ID`, `GITHUB_APP_INSTALLATION_ID`, and `GITHUB_APP_PRIVATE_KEY`.
-
-## Programmatic API
-
-```ts
-import {
-  refreshReleaseEvidence,
-  SEEDED_RELEASE,
-  ingestProviderWebhook,
-  signPayload,
-  GitHubCheckRunPublisher,
-} from "@/lib/release-room/integrations";
-
-const refreshed = await refreshReleaseEvidence({ release: SEEDED_RELEASE });
+```bash
+npm run release-room -- report \
+  --release-id rc-demo-ready \
+  --task "SHE-94" \
+  --check lint --check typecheck \
+  --dry-run
 ```
+
+Retries on HTTP 5xx/429. Idempotent on `editor:{runId}:{kind}`.
+
+## Evidence semantics
+
+Backfill adapters and webhook normalizers share canonical ids via
+`lib/release-room/integrations/evidence-keys.ts` (see Loop 1 doc).
 
 ## Tests
 
@@ -136,18 +93,5 @@ const refreshed = await refreshReleaseEvidence({ release: SEEDED_RELEASE });
 npm run test:integrations
 ```
 
-## Acceptance mapping (SHE-69)
-
-| Requirement | Implementation |
-| --- | --- |
-| GitHub webhook + `X-Hub-Signature-256` | `app/api/integrations/github/route.ts`, `validateGitHubSignature` |
-| Delivery idempotency | `IdempotencyStore` keyed by `github:<X-GitHub-Delivery>` |
-| PR / check suite / check run / review / push | `normalize/github.ts` |
-| Linear webhook + signature + issue/update | `app/api/integrations/linear/route.ts`, `normalize/linear.ts` |
-| Vercel webhook + signature + deployment lifecycle | `app/api/integrations/vercel/route.ts`, `normalize/vercel.ts` |
-| Replay protection | `assertEventFreshness` |
-| Oversized rejection | `assertBodyWithinLimit` |
-| Provider-event envelope + audit | `ProviderEventEnvelope`, `IntegrationAuditStore` |
-| Manual read adapters retained | `GitHubAdapter` / `LinearAdapter` / `VercelAdapter` + `/refresh` |
-| Connection freshness / last event / errors | `ConnectionStateStore`, `/api/integrations/health` |
-| Check-run publish behind adapter | `adapters/github-checks-publish.ts` |
+Covers happy, invalid signature, duplicate, stale, unmatched, oversized,
+provider-down, editor contract, and health vocabulary paths.

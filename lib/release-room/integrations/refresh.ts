@@ -1,5 +1,9 @@
 import { createAdaptersForEnv } from "./adapters";
 import { getIntegrationEnv, type IntegrationEnv } from "./config";
+import {
+  ConnectionStateStore,
+  defaultConnectionStateStore,
+} from "./connection-state";
 import { SEEDED_RELEASE, FIXTURE_NOW } from "./fixtures";
 import { IdempotencyStore } from "./idempotency";
 import type {
@@ -20,20 +24,25 @@ export interface RefreshOptions {
   now?: string;
   forceFixture?: boolean;
   fetchImpl?: typeof fetch;
+  connectionStore?: ConnectionStateStore;
 }
 
 /**
  * Refresh evidence for a release candidate from configured adapters.
  * With no credentials, fixtures populate immediately (seeded demo path).
  * With credentials, live providers activate without application code changes.
+ * Updates connection health on live adapter success/failure (SHE-94).
  */
 export async function refreshReleaseEvidence(
   options: RefreshOptions = {}
 ): Promise<RefreshResult> {
   const env = options.env ?? getIntegrationEnv();
   const release = options.release ?? SEEDED_RELEASE;
-  const now = options.now ?? (env.forceFixtures ? FIXTURE_NOW : new Date().toISOString());
+  const now =
+    options.now ?? (env.forceFixtures ? FIXTURE_NOW : new Date().toISOString());
   const adapters = options.adapters ?? createAdaptersForEnv(env);
+  const connectionStore =
+    options.connectionStore ?? defaultConnectionStateStore;
 
   const ctx: AdapterContext = {
     release,
@@ -44,7 +53,36 @@ export async function refreshReleaseEvidence(
 
   const adapterResults: AdapterResult[] = [];
   for (const adapter of adapters) {
-    adapterResults.push(await adapter.collect(ctx));
+    const result = await adapter.collect(ctx);
+    adapterResults.push(result);
+
+    if (adapter.provider === "fixture") continue;
+    if (result.mode === "fixture") continue;
+
+    const failed = result.evidence.some(
+      (item) =>
+        item.outcome === "fail" &&
+        (item.id.includes(":error:") ||
+          item.title.toLowerCase().includes("failure"))
+    );
+    if (failed) {
+      connectionStore.recordError({
+        provider: adapter.provider as "github" | "linear" | "vercel",
+        code: `${adapter.provider}_refresh_failed`,
+        message: result.note,
+        eventId: `refresh:${release.id}`,
+        eventType: "refresh",
+        at: now,
+        degraded: true,
+      });
+    } else if (adapter.isLiveConfigured()) {
+      connectionStore.recordSuccess({
+        provider: adapter.provider as "github" | "linear" | "vercel",
+        eventId: `refresh:${release.id}`,
+        eventType: "refresh",
+        at: now,
+      });
+    }
   }
 
   const incoming = adapterResults.flatMap((result) => result.evidence);

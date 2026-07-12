@@ -36,7 +36,7 @@ export class IntegrationAuditStore {
   }
 
   listByProvider(
-    provider: NativeProvider | "webhook",
+    provider: NativeProvider | "webhook" | "editor",
     limit = 50
   ): IntegrationAuditRecord[] {
     return this.records.filter((row) => row.provider === provider).slice(-limit);
@@ -58,5 +58,7 @@ export function auditStatusFromErrorCode(
 ): IntegrationAuditStatus {
   if (code === "webhook_event_stale") return "stale";
   if (code === "webhook_payload_too_large") return "oversized";
+  if (code === "release_match_unmatched") return "unmatched";
+  if (code === "release_match_ambiguous") return "ambiguous";
   return "rejected";
 }

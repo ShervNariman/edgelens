@@ -36,6 +36,7 @@ function envWithSecrets() {
     linearApiKey: null,
     vercelToken: null,
     webhookSecret: null,
+    evidenceSecret: null,
     forceFixtures: false,
     githubOwner: null,
     githubRepo: null,
@@ -214,10 +215,11 @@ describe("Linear and Vercel normalization", () => {
       receivedAt: now,
     });
     assert.equal(envelope.provider, "linear");
-    assert.equal(envelope.releaseId, "SHE-69");
+    assert.equal(envelope.releaseId, null);
+    assert.equal(envelope.metadata?.linearIssueId, "SHE-69");
     assert.ok(envelope.evidence.some((item) => item.id === "linear:issue:SHE-69"));
     assert.ok(
-      envelope.evidence.some((item) => item.id === "linear:acceptance:SHE-69")
+      envelope.evidence.some((item) => item.id === "linear:ac:SHE-69")
     );
   });
 
@@ -243,6 +245,9 @@ describe("Linear and Vercel normalization", () => {
     });
     assert.equal(envelope.evidence[0]?.outcome, "pass");
     assert.ok(
+      envelope.evidence.some((item) => item.id === "vercel:visual:dpl_123")
+    );
+    assert.ok(
       envelope.evidence.some((item) => item.category === "visual")
     );
   });
@@ -264,10 +269,11 @@ describe("provider webhook ingest", () => {
   it("accepts a valid GitHub pull_request webhook and deduplicates delivery", () => {
     const body = JSON.stringify({
       action: "opened",
+      repository: { full_name: "acme/release-room" },
       pull_request: {
         number: 42,
         title: "Add checkout",
-        html_url: "https://github.com/acme/app/pull/42",
+        html_url: "https://github.com/acme/release-room/pull/42",
         state: "open",
         merged: false,
         updated_at: now,
@@ -292,9 +298,10 @@ describe("provider webhook ingest", () => {
 
     assert.equal(first.status, "accepted");
     assert.equal(second.status, "duplicate");
+    assert.equal(first.releaseId, "rc-demo-ready");
     assert.equal(first.envelope?.deliveryId, "gh-delivery-1");
     assert.equal(auditStore.size(), 2);
-    assert.equal(connectionStore.get("github").health, "healthy");
+    assert.equal(connectionStore.get("github").health, "connected");
     assert.equal(connectionStore.get("github").lastEventId, "gh-delivery-1");
   });
 
@@ -317,7 +324,7 @@ describe("provider webhook ingest", () => {
         error instanceof IntegrationError &&
         error.code === "webhook_signature_mismatch"
     );
-    assert.equal(connectionStore.get("github").health, "error");
+    assert.equal(connectionStore.get("github").health, "failed");
     assert.equal(
       connectionStore.get("github").lastError?.code,
       "webhook_signature_mismatch"
@@ -333,9 +340,9 @@ describe("provider webhook ingest", () => {
       createdAt: now,
       data: {
         id: "iss_1",
-        identifier: "SHE-69",
+        identifier: "SHE-60",
         title: "Webhooks",
-        url: "https://linear.app/acme/issue/SHE-69",
+        url: "https://linear.app/acme/issue/SHE-60",
         state: { name: "In Progress" },
         updatedAt: now,
       },
@@ -422,7 +429,7 @@ describe("provider webhook ingest", () => {
       createdAt: now,
       payload: {
         deployment: {
-          id: "dpl_ok",
+          id: "dpl_fixture_001",
           url: "ok.vercel.app",
           readyState: "READY",
           createdAt: now,
@@ -441,6 +448,7 @@ describe("provider webhook ingest", () => {
       connectionStore,
     });
     assert.equal(result.status, "accepted");
+    assert.equal(result.releaseId, "rc-demo-ready");
     assert.equal(result.envelope?.provider, "vercel");
     assert.ok(result.evidence.length >= 1);
   });

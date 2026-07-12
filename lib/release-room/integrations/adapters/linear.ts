@@ -186,6 +186,7 @@ export class LinearAdapter implements EvidenceAdapter {
     const now = ctx.now ?? new Date().toISOString();
 
     // Prefer direct id lookup; fall back to search by identifier (SHE-60).
+    // Ambiguous search results are rejected — never silently pick nodes[0].
     let issue: Json | null = null;
     if (issueKey.includes("-") && !issueKey.startsWith("issue_")) {
       const data = await linearGraphql(
@@ -196,11 +197,28 @@ export class LinearAdapter implements EvidenceAdapter {
       );
       const nodes = (data.issueSearch as Json | undefined)?.nodes;
       if (Array.isArray(nodes)) {
-        issue =
-          (nodes.find((node) => asString((node as Json).identifier) === issueKey) as
-            | Json
-            | undefined) ?? (nodes[0] as Json | undefined) ??
-          null;
+        const exact = nodes.filter(
+          (node) => asString((node as Json).identifier) === issueKey
+        ) as Json[];
+        if (exact.length === 1) {
+          issue = exact[0];
+        } else if (exact.length > 1) {
+          throw new IntegrationError(
+            "linear_issue_ambiguous",
+            `Multiple Linear issues matched identifier ${issueKey}.`,
+            422,
+            { count: exact.length }
+          );
+        } else if (nodes.length > 1) {
+          throw new IntegrationError(
+            "linear_issue_ambiguous",
+            `Ambiguous Linear search for ${issueKey} (${nodes.length} results).`,
+            422,
+            { count: nodes.length }
+          );
+        } else {
+          issue = (nodes[0] as Json | undefined) ?? null;
+        }
       }
     } else {
       const data = await linearGraphql(ISSUE_QUERY, { id: issueKey }, apiKey, fetchImpl);

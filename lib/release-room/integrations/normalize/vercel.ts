@@ -153,13 +153,13 @@ export function normalizeVercelEvent(
 
   if (url && (outcome === "pass" || outcome === "pending")) {
     evidence.push({
-      id: `vercel:preview:${deploymentId}`,
+      id: `vercel:visual:${deploymentId}`,
       provider: "vercel",
       category: "visual",
       outcome: outcome === "pass" ? "pass" : "pending",
-      title: "Preview deployment",
+      title: "Preview visual check",
       summary: `Preview available at ${url.startsWith("http") ? url : `https://${url}`}.`,
-      externalId: `${deploymentId}:preview`,
+      externalId: `visual-${deploymentId}`,
       sourceLinks: [...sourceLinks],
       collectedAt: now,
     });
@@ -170,7 +170,8 @@ export function normalizeVercelEvent(
     provider: "vercel",
     eventType,
     receivedAt: now,
-    releaseId: input.releaseId ?? deploymentId,
+    // Heuristic only — provider-ingest resolves against the release registry.
+    releaseId: input.releaseId ?? null,
     eventTimestamp,
     payloadHash: hashPayload(input.rawBody),
     evidence,
@@ -178,6 +179,9 @@ export function normalizeVercelEvent(
     metadata: {
       eventType,
       deploymentId,
+      vercelDeploymentId: deploymentId,
+      vercelProjectId:
+        asString(payloadInner.projectId) ?? asString(deployment?.projectId),
       state,
       target,
     },

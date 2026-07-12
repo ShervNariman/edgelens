@@ -1,5 +1,32 @@
+import {
+  auditStatusFromErrorCode,
+  defaultAuditStore,
+  IntegrationAuditStore,
+} from "./audit";
+import {
+  DEFAULT_WEBHOOK_MAX_AGE_SECONDS,
+  DEFAULT_WEBHOOK_MAX_BODY_BYTES,
+  getIntegrationEnv,
+  type IntegrationEnv,
+} from "./config";
+import {
+  ConnectionStateStore,
+  defaultConnectionStateStore,
+} from "./connection-state";
 import { IdempotencyStore, defaultIdempotencyStore } from "./idempotency";
-import { validateWebhookSignature } from "./secrets";
+import {
+  assertMatchedRelease,
+  matchReleaseCandidate,
+} from "./release-matching";
+import {
+  defaultReleaseRegistry,
+  type ReleaseRegistry,
+} from "./release-registry";
+import {
+  assertBodyWithinLimit,
+  assertEventFreshness,
+  validateWebhookSignature,
+} from "./secrets";
 import type {
   IngestResult,
   IntegrationProvider,
@@ -14,10 +41,18 @@ export interface WebhookIngestInput {
   /** Signature header value (sha256=<hex> or bare hex) */
   signatureHeader: string | null | undefined;
   /** Shared secret; typically RELEASE_ROOM_WEBHOOK_SECRET */
-  secret: string | null | undefined;
+  secret?: string | null | undefined;
   /** Optional override for receivedAt (tests) */
   now?: string;
+  /** Optional provider event timestamp for replay protection */
+  eventTimestamp?: string | null;
+  env?: IntegrationEnv;
   store?: IdempotencyStore;
+  auditStore?: IntegrationAuditStore;
+  connectionStore?: ConnectionStateStore;
+  registry?: ReleaseRegistry;
+  skipFreshness?: boolean;
+  skipMatching?: boolean;
 }
 
 interface WebhookPayload {
@@ -31,6 +66,8 @@ interface WebhookPayload {
   category?: unknown;
   outcome?: unknown;
   externalId?: unknown;
+  occurredAt?: unknown;
+  eventTimestamp?: unknown;
 }
 
 function asString(value: unknown): string | null {
@@ -43,6 +80,7 @@ function isProvider(value: string): value is IntegrationProvider {
     value === "linear" ||
     value === "vercel" ||
     value === "webhook" ||
+    value === "editor" ||
     value === "fixture"
   );
 }
@@ -101,14 +139,73 @@ function parseEvidenceList(
 
 /**
  * Validate signature, parse payload, and ingest idempotently.
- * Secure failure: invalid signatures and malformed payloads reject without leaking secrets.
+ * Parity with provider ingress: bounds, freshness, matching, audit, connection.
  */
 export function ingestSignedWebhook(input: WebhookIngestInput): IngestResult {
-  validateWebhookSignature({
-    body: input.rawBody,
-    signatureHeader: input.signatureHeader,
-    secret: input.secret,
-  });
+  const env = input.env ?? getIntegrationEnv();
+  const secret = input.secret ?? env.webhookSecret ?? env.evidenceSecret;
+  const now = input.now ?? new Date().toISOString();
+  const store = input.store ?? defaultIdempotencyStore;
+  const auditStore = input.auditStore ?? defaultAuditStore;
+  const connectionStore = input.connectionStore ?? defaultConnectionStateStore;
+  const registry = input.registry ?? defaultReleaseRegistry;
+  const maxBytes = env.webhookMaxBodyBytes || DEFAULT_WEBHOOK_MAX_BODY_BYTES;
+  const maxAge = env.webhookMaxAgeSeconds || DEFAULT_WEBHOOK_MAX_AGE_SECONDS;
+
+  try {
+    assertBodyWithinLimit(input.rawBody, maxBytes);
+  } catch (error) {
+    if (error instanceof IntegrationError) {
+      auditStore.append({
+        provider: "webhook",
+        deliveryId: "unknown",
+        eventType: "webhook",
+        status: auditStatusFromErrorCode(error.code),
+        receivedAt: now,
+        message: error.message,
+        releaseId: null,
+        evidenceIds: [],
+        errorCode: error.code,
+      });
+      connectionStore.recordError({
+        provider: "webhook",
+        code: error.code,
+        message: error.message,
+        at: now,
+        degraded: true,
+      });
+    }
+    throw error;
+  }
+
+  try {
+    validateWebhookSignature({
+      body: input.rawBody,
+      signatureHeader: input.signatureHeader,
+      secret,
+    });
+  } catch (error) {
+    if (error instanceof IntegrationError) {
+      auditStore.append({
+        provider: "webhook",
+        deliveryId: "unknown",
+        eventType: "webhook",
+        status: "rejected",
+        receivedAt: now,
+        message: error.message,
+        releaseId: null,
+        evidenceIds: [],
+        errorCode: error.code,
+      });
+      connectionStore.recordError({
+        provider: "webhook",
+        code: error.code,
+        message: error.message,
+        at: now,
+      });
+    }
+    throw error;
+  }
 
   let payload: WebhookPayload;
   try {
@@ -124,6 +221,11 @@ export function ingestSignedWebhook(input: WebhookIngestInput): IngestResult {
   const eventId = asString(payload.eventId);
   const releaseId = asString(payload.releaseId);
   const providerRaw = asString(payload.provider) ?? "webhook";
+  const eventTimestamp =
+    input.eventTimestamp ??
+    asString(payload.occurredAt) ??
+    asString(payload.eventTimestamp) ??
+    now;
 
   if (!eventId) {
     throw new IntegrationError(
@@ -147,10 +249,52 @@ export function ingestSignedWebhook(input: WebhookIngestInput): IngestResult {
     );
   }
 
-  const now = input.now ?? new Date().toISOString();
+  if (!input.skipFreshness) {
+    try {
+      assertEventFreshness({
+        eventTimestamp,
+        now,
+        maxAgeSeconds: maxAge,
+        requireTimestamp: true,
+      });
+    } catch (error) {
+      if (error instanceof IntegrationError) {
+        auditStore.append({
+          provider: "webhook",
+          deliveryId: eventId,
+          eventType: "webhook",
+          status: "stale",
+          receivedAt: now,
+          message: error.message,
+          releaseId,
+          evidenceIds: [],
+          errorCode: error.code,
+        });
+        connectionStore.recordError({
+          provider: "webhook",
+          code: error.code,
+          message: error.message,
+          eventId,
+          eventType: "webhook",
+          at: now,
+          degraded: true,
+        });
+      }
+      throw error;
+    }
+  }
+
+  if (!input.skipMatching) {
+    const match = matchReleaseCandidate({
+      provider: providerRaw === "editor" ? "editor" : "webhook",
+      hints: { releaseId },
+      registry,
+    });
+    assertMatchedRelease(match);
+  }
+
   let evidence = parseEvidenceList(payload.evidence, providerRaw, now);
 
-  // Allow a single evidence object encoded at the top level.
   if (evidence.length === 0) {
     const title = asString(payload.title);
     const externalId = asString(payload.externalId) ?? eventId;
@@ -188,7 +332,6 @@ export function ingestSignedWebhook(input: WebhookIngestInput): IngestResult {
     }
   }
 
-  // Attach top-level source links onto each evidence item when present.
   if (sourceLinks.length > 0) {
     evidence = evidence.map((item) => ({
       ...item,
@@ -196,8 +339,7 @@ export function ingestSignedWebhook(input: WebhookIngestInput): IngestResult {
     }));
   }
 
-  const store = input.store ?? defaultIdempotencyStore;
-  return store.accept({
+  const result = store.accept({
     eventId,
     provider: providerRaw,
     releaseId,
@@ -205,4 +347,30 @@ export function ingestSignedWebhook(input: WebhookIngestInput): IngestResult {
     evidence,
     sourceLinks,
   });
+
+  const audit = auditStore.append({
+    provider: "webhook",
+    deliveryId: eventId,
+    eventType: "webhook",
+    status: result.status === "duplicate" ? "duplicate" : "accepted",
+    receivedAt: now,
+    message: result.message,
+    releaseId,
+    evidenceIds: evidence.map((item) => item.id),
+  });
+
+  if (result.status === "accepted") {
+    connectionStore.recordSuccess({
+      provider: providerRaw === "editor" ? "editor" : "webhook",
+      eventId,
+      eventType: "webhook",
+      at: now,
+    });
+  }
+
+  return {
+    ...result,
+    releaseId,
+    audit,
+  };
 }

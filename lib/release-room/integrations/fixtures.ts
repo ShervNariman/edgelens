@@ -216,7 +216,7 @@ export const SEEDED_BLOCKED_RELEASE: ReleaseRef = {
   repository: "acme/release-room",
   branch: "release/blocked",
   prNumber: 43,
-  linearIssueId: "SHE-60",
+  linearIssueId: "SHE-61",
   vercelProjectId: "prj_fixture",
   vercelDeploymentId: "dpl_fixture_002",
   version: "0.1.0-blocked",

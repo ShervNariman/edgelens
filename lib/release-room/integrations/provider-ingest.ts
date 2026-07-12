@@ -18,6 +18,15 @@ import { normalizeGitHubEvent } from "./normalize/github";
 import { normalizeLinearEvent } from "./normalize/linear";
 import { normalizeVercelEvent } from "./normalize/vercel";
 import {
+  assertMatchedRelease,
+  matchReleaseCandidate,
+  type MatchHints,
+} from "./release-matching";
+import {
+  defaultReleaseRegistry,
+  type ReleaseRegistry,
+} from "./release-registry";
+import {
   assertBodyWithinLimit,
   assertEventFreshness,
   validateGitHubSignature,
@@ -50,8 +59,11 @@ export interface ProviderWebhookIngestInput {
   store?: IdempotencyStore;
   auditStore?: IntegrationAuditStore;
   connectionStore?: ConnectionStateStore;
+  registry?: ReleaseRegistry;
   /** Skip freshness check (tests) */
   skipFreshness?: boolean;
+  /** Skip release matching (tests only — production always matches) */
+  skipMatching?: boolean;
 }
 
 function envelopeToIngestResult(
@@ -65,6 +77,7 @@ function envelopeToIngestResult(
     eventId: envelope.deliveryId,
     evidence: envelope.evidence,
     message,
+    releaseId: envelope.releaseId,
     envelope,
     audit,
   };
@@ -91,7 +104,15 @@ function recordRejection(options: {
     releaseId: options.releaseId ?? null,
     evidenceIds: [],
     errorCode: options.error.code,
+    metadata: options.error.details,
   });
+  // Stale/oversized/signature failures are rejected without flipping a healthy
+  // connection to failed unless it is a signature/config failure.
+  const soft =
+    options.error.code === "webhook_event_stale" ||
+    options.error.code === "webhook_payload_too_large" ||
+    options.error.code === "release_match_unmatched" ||
+    options.error.code === "release_match_ambiguous";
   options.connectionStore.recordError({
     provider: options.provider,
     code: options.error.code,
@@ -99,13 +120,43 @@ function recordRejection(options: {
     eventId: options.deliveryId,
     eventType: options.eventType,
     at: options.now,
+    degraded: soft,
   });
   throw options.error;
 }
 
+function hintsFromEnvelope(
+  provider: NativeProvider,
+  envelope: ProviderEventEnvelope,
+  releaseIdOverride?: string | null
+): MatchHints {
+  const meta = envelope.metadata ?? {};
+  return {
+    releaseId: releaseIdOverride ?? envelope.releaseId,
+    repository:
+      typeof meta.repository === "string" ? meta.repository : null,
+    prNumber: typeof meta.prNumber === "number" ? meta.prNumber : null,
+    linearIssueId:
+      typeof meta.linearIssueId === "string"
+        ? meta.linearIssueId
+        : typeof meta.identifier === "string"
+          ? meta.identifier
+          : null,
+    vercelDeploymentId:
+      typeof meta.vercelDeploymentId === "string"
+        ? meta.vercelDeploymentId
+        : typeof meta.deploymentId === "string"
+          ? meta.deploymentId
+          : null,
+    vercelProjectId:
+      typeof meta.vercelProjectId === "string" ? meta.vercelProjectId : null,
+    branch: typeof meta.branch === "string" ? meta.branch : null,
+  };
+}
+
 /**
  * Authenticated provider webhook ingest with signature validation,
- * delivery idempotency, replay protection, and audit/connection updates.
+ * delivery idempotency, replay protection, release matching, and audit updates.
  */
 export function ingestProviderWebhook(
   input: ProviderWebhookIngestInput
@@ -115,6 +166,7 @@ export function ingestProviderWebhook(
   const store = input.store ?? defaultIdempotencyStore;
   const auditStore = input.auditStore ?? defaultAuditStore;
   const connectionStore = input.connectionStore ?? defaultConnectionStateStore;
+  const registry = input.registry ?? defaultReleaseRegistry;
   const maxBytes = env.webhookMaxBodyBytes || DEFAULT_WEBHOOK_MAX_BODY_BYTES;
   const maxAge = env.webhookMaxAgeSeconds || DEFAULT_WEBHOOK_MAX_AGE_SECONDS;
 
@@ -246,6 +298,7 @@ export function ingestProviderWebhook(
         now,
         maxAgeSeconds: maxAge,
         // Linear/Vercel enforce timestamps when present; GitHub uses delivery id
+        // plus optional eventTimestamp when available.
         requireTimestamp: input.provider !== "github",
       });
     } catch (error) {
@@ -268,6 +321,7 @@ export function ingestProviderWebhook(
           eventId: envelope.deliveryId,
           eventType: envelope.eventType,
           at: now,
+          degraded: true,
         });
         throw new IntegrationError(
           error.code,
@@ -275,6 +329,48 @@ export function ingestProviderWebhook(
           error.status,
           { ...(error.details ?? {}), auditId: audit.id }
         );
+      }
+      throw error;
+    }
+  }
+
+  if (!input.skipMatching) {
+    const hints = hintsFromEnvelope(
+      input.provider,
+      envelope,
+      input.releaseId
+    );
+    // Do not treat normalizer heuristic ids (pr-42, deployment ids) as exact
+    // release registry ids unless they are registered.
+    if (
+      hints.releaseId &&
+      !registry.get(hints.releaseId) &&
+      !input.releaseId
+    ) {
+      hints.releaseId = null;
+    }
+
+    const match = matchReleaseCandidate({
+      provider: input.provider,
+      hints,
+      registry,
+    });
+
+    try {
+      const release = assertMatchedRelease(match);
+      envelope = { ...envelope, releaseId: release.id };
+    } catch (error) {
+      if (error instanceof IntegrationError) {
+        recordRejection({
+          provider: input.provider,
+          deliveryId: envelope.deliveryId,
+          eventType: envelope.eventType,
+          error,
+          now,
+          auditStore,
+          connectionStore,
+          releaseId: envelope.releaseId,
+        });
       }
       throw error;
     }

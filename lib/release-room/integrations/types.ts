@@ -10,6 +10,7 @@ export const INTEGRATION_PROVIDERS = [
   "linear",
   "vercel",
   "webhook",
+  "editor",
   "fixture",
 ] as const;
 
@@ -115,10 +116,12 @@ export interface IngestedEvent {
 }
 
 export interface IngestResult {
-  status: "accepted" | "duplicate" | "rejected";
+  status: "accepted" | "duplicate" | "rejected" | "unmatched" | "ambiguous";
   eventId: string;
   evidence: NormalizedEvidenceItem[];
   message: string;
+  /** Matched release candidate id when known. */
+  releaseId?: string | null;
   /** Present when ingest produced a provider-event envelope (SHE-69). */
   envelope?: ProviderEventEnvelope;
   audit?: IntegrationAuditRecord;
@@ -164,12 +167,14 @@ export type IntegrationAuditStatus =
   | "duplicate"
   | "rejected"
   | "stale"
-  | "oversized";
+  | "oversized"
+  | "unmatched"
+  | "ambiguous";
 
 /** Append-only style audit record for webhook ingestion outcomes. */
 export interface IntegrationAuditRecord {
   id: string;
-  provider: NativeProvider | "webhook";
+  provider: NativeProvider | "webhook" | "editor";
   deliveryId: string;
   eventType: string;
   status: IntegrationAuditStatus;
@@ -181,21 +186,47 @@ export interface IntegrationAuditRecord {
   metadata?: Record<string, unknown>;
 }
 
-export type ConnectionHealth = "healthy" | "stale" | "error" | "never";
+/**
+ * Truthful provider health vocabulary (SHE-94 Loop 1).
+ * - not_configured: secrets / tokens absent
+ * - configured: secrets present, no successful live event yet
+ * - connected: recent successful event / probe
+ * - stale: was connected, aged beyond freshness window
+ * - degraded: partial capability (e.g. webhook ok, read probe weak)
+ * - failed: last operation failed
+ */
+export type ConnectionHealth =
+  | "not_configured"
+  | "configured"
+  | "connected"
+  | "stale"
+  | "degraded"
+  | "failed";
+
+export type ConnectionProvider =
+  | NativeProvider
+  | "webhook"
+  | "editor";
 
 /** Per-provider connection freshness and actionable error state. */
 export interface ConnectionState {
-  provider: NativeProvider | "webhook";
+  provider: ConnectionProvider;
   health: ConnectionHealth;
   lastEventAt: string | null;
   lastEventId: string | null;
   lastEventType: string | null;
   lastSuccessAt: string | null;
   lastErrorAt: string | null;
+  lastProbeAt: string | null;
   /** Actionable error for operators (no secrets). */
   lastError: { code: string; message: string } | null;
-  /** True when install/webhook secret is configured */
+  /** True when install/webhook secret or read token is configured */
   configured: boolean;
+  /** Optional read vs webhook split for operators */
+  channels?: {
+    read?: ConnectionHealth;
+    webhook?: ConnectionHealth;
+  };
 }
 
 export class IntegrationError extends Error {

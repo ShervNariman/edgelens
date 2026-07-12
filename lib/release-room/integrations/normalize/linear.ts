@@ -135,7 +135,7 @@ export function normalizeLinearEvent(
 
   if (acceptance.total > 0) {
     evidence.push({
-      id: `linear:acceptance:${identifier}`,
+      id: `linear:ac:${identifier}`,
       provider: "linear",
       category: "intent",
       outcome:
@@ -146,7 +146,7 @@ export function normalizeLinearEvent(
             : "pending",
       title: `Acceptance criteria (${acceptance.checked}/${acceptance.total})`,
       summary: `${acceptance.checked} of ${acceptance.total} acceptance checkboxes checked.`,
-      externalId: `${identifier}:acceptance`,
+      externalId: `${identifier}-ac`,
       sourceLinks: [...sourceLinks],
       collectedAt: now,
       metadata: acceptance,
@@ -158,7 +158,8 @@ export function normalizeLinearEvent(
     provider: "linear",
     eventType: `${type}.${action}`,
     receivedAt: now,
-    releaseId: input.releaseId ?? identifier,
+    // Heuristic only — provider-ingest resolves against the release registry.
+    releaseId: input.releaseId ?? null,
     eventTimestamp,
     payloadHash: hashPayload(input.rawBody),
     evidence,
@@ -168,6 +169,7 @@ export function normalizeLinearEvent(
       type,
       identifier,
       issueId,
+      linearIssueId: identifier,
     },
   };
 }

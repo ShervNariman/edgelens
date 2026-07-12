@@ -1,11 +1,9 @@
 /**
- * Release Room integrations (SHE-60 + SHE-69).
+ * Release Room integrations (SHE-60 + SHE-69 + SHE-94 Loop 1).
  *
- * Adapter boundaries for GitHub, Linear, Vercel, and signed webhook ingestion.
- * SHE-69 adds authenticated provider webhook routes, event envelopes, audit,
- * connection freshness, and a GitHub App-gated check-run publish adapter.
- * Fixtures activate when credentials are absent; live providers activate via env.
- * Manual read adapters remain the recovery/backfill path via refresh.
+ * Adapter boundaries for GitHub, Linear, Vercel, editor/agent, and signed webhook
+ * ingestion. Loop 1 adds release matching, truthful health states, connection
+ * tests, evidence-id parity, and retry-safe editor evidence contract.
  */
 
 export {
@@ -28,6 +26,7 @@ export {
   DEFAULT_WEBHOOK_MAX_AGE_SECONDS,
   DEFAULT_WEBHOOK_MAX_BODY_BYTES,
   describeProviderModes,
+  evidenceConfigured,
   getIntegrationEnv,
   githubAppWriteConfigured,
   githubLiveEnabled,
@@ -44,6 +43,39 @@ export {
   ConnectionStateStore,
   defaultConnectionStateStore,
 } from "./connection-state";
+
+export {
+  runConnectionTests,
+  type ConnectionTestResult,
+} from "./connection-test";
+
+export {
+  editorPayloadToEvidence,
+  editorPayloadToWebhookBody,
+  parseEditorEvidencePayload,
+  EDITOR_AGENTS,
+  EDITOR_BRIDGE_LIMITS,
+  EDITOR_EVENT_KINDS,
+  EDITOR_OUTCOMES,
+  type EditorAgent,
+  type EditorEvidencePayload,
+  type EditorEventKind,
+  type EditorOutcome,
+} from "./editor";
+
+export {
+  editorEvidenceKey,
+  githubCheckRunKey,
+  githubChecksKey,
+  githubPrKey,
+  githubPushKey,
+  githubReviewKey,
+  linearAcceptanceKey,
+  linearIssueKey,
+  vercelDeploymentKey,
+  vercelVisualKey,
+  webhookEvidenceKey,
+} from "./evidence-keys";
 
 export {
   FIXTURE_NOW,
@@ -69,11 +101,30 @@ export { normalizeLinearEvent } from "./normalize/linear";
 export { normalizeVercelEvent } from "./normalize/vercel";
 
 export {
+  buildSetupGuides,
+  type ProviderPermission,
+  type ProviderSetupGuide,
+} from "./permissions";
+
+export {
   ingestProviderWebhook,
   type ProviderWebhookIngestInput,
 } from "./provider-ingest";
 
 export { refreshReleaseEvidence, type RefreshOptions } from "./refresh";
+
+export {
+  assertMatchedRelease,
+  matchReleaseCandidate,
+  type MatchHints,
+  type MatchResult,
+  type MatchStatus,
+} from "./release-matching";
+
+export {
+  ReleaseRegistry,
+  defaultReleaseRegistry,
+} from "./release-registry";
 
 export {
   assertBodyWithinLimit,
@@ -97,6 +148,7 @@ export {
   type AdapterContext,
   type AdapterResult,
   type ConnectionHealth,
+  type ConnectionProvider,
   type ConnectionState,
   type EvidenceAdapter,
   type IngestResult,
