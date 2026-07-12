@@ -11,6 +11,7 @@ import { CODE_EXAMPLES, findExampleByCode, type CodeExample } from "@/examples";
 import { Hero } from "@/components/hero";
 import { CodeInputPanel } from "@/components/code-input-panel";
 import { ResultsPanel } from "@/components/results-panel";
+import { AIExplanationPanel } from "@/components/ai-explanation-panel";
 import { PreviewPane } from "@/components/preview-pane";
 import { SiteFooter } from "@/components/site-footer";
 import { PreviewErrorBoundary } from "@/components/preview-error-boundary";
@@ -308,6 +309,8 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
                 </div>
                 <ResultsPanel report={report} isAnalyzing={isAnalyzing} />
               </div>
+
+              {!isRecording && <AIExplanationPanel report={report} />}
             </section>
           </div>
         </main>
