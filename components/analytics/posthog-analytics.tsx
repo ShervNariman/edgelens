@@ -58,7 +58,7 @@ function RouteTracker({
 
       posthog.capture("$pageview", {
         ...properties,
-        $current_url: window.location.href,
+        $current_url: `${window.location.origin}${pathname}`,
       });
       posthog.capture("product_viewed", properties);
       return true;
@@ -91,14 +91,11 @@ export function PostHogAnalytics({
     posthog.init(${JSON.stringify(projectToken)}, {
       api_host: ${JSON.stringify(apiHost)},
       defaults: "2026-05-30",
-      autocapture: true,
+      autocapture: false,
       capture_pageview: false,
-      capture_pageleave: true,
+      capture_pageleave: false,
+      disable_session_recording: true,
       person_profiles: "identified_only",
-      session_recording: {
-        maskAllInputs: true,
-        maskTextSelector: "[data-ph-sensitive], .ph-sensitive"
-      },
       loaded: function() {
         window.dispatchEvent(new Event("posthog:ready"));
       }
