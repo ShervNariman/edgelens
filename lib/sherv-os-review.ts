@@ -1,31 +1,6 @@
-import type { AnalysisIssue, AnalysisReport } from "@/types/analysis";
+import type { ShervOSReviewSummary } from "@/lib/sherv-os-summary";
 
-const MAX_FINDINGS = 12;
-const MAX_TEXT_LENGTH = 1_200;
 const REQUEST_TIMEOUT_MS = 60_000;
-
-export interface ShervOSReviewSummary {
-  componentName: string | null;
-  primaryType: string;
-  score: number;
-  totalIssues: number;
-  criticalCount: number;
-  warningCount: number;
-  infoCount: number;
-  statesCovered: number;
-  statesTotal: number;
-  missingRequiredStates: string[];
-  findings: Array<{
-    title: string;
-    description: string;
-    suggestion: string;
-    severity: string;
-    category: string;
-    source: string;
-  }>;
-  previewDomChecked: boolean;
-  previewViolationCount: number;
-}
 
 interface ShervOSGenerationResponse {
   output?: unknown;
@@ -46,48 +21,6 @@ export interface ShervOSReviewResult {
     model?: string;
     capability?: string;
     usedFallback?: boolean;
-  };
-}
-
-function boundedText(value: string): string {
-  return value.slice(0, MAX_TEXT_LENGTH);
-}
-
-function normalizeFinding(issue: AnalysisIssue) {
-  return {
-    title: boundedText(issue.title),
-    description: boundedText(issue.description),
-    suggestion: boundedText(issue.suggestion),
-    severity: issue.severity,
-    category: issue.category,
-    source: issue.source,
-  };
-}
-
-/**
- * Builds a privacy-safe summary for the optional AI explanation layer.
- * Deliberately excludes sourceCode, filenames, locations, fix snippets, raw DOM,
- * accessibility trees, and parser diagnostics.
- */
-export function buildShervOSReviewSummary(
-  report: AnalysisReport,
-): ShervOSReviewSummary {
-  return {
-    componentName: report.componentName,
-    primaryType: report.primaryType,
-    score: report.summary.score,
-    totalIssues: report.summary.totalIssues,
-    criticalCount: report.summary.criticalCount,
-    warningCount: report.summary.warningCount,
-    infoCount: report.summary.infoCount,
-    statesCovered: report.summary.statesCovered,
-    statesTotal: report.summary.statesTotal,
-    missingRequiredStates: report.stateCoverage
-      .filter((state) => state.required && !state.present)
-      .map((state) => state.state),
-    findings: report.issues.slice(0, MAX_FINDINGS).map(normalizeFinding),
-    previewDomChecked: report.previewDomChecked,
-    previewViolationCount: report.axeViolations.length,
   };
 }
 
@@ -177,20 +110,22 @@ export async function requestShervOSReview(
       throw new ShervOSRequestError();
     }
 
+    const routing = safeRouting(payload.routing);
+
     return {
       explanation: payload.output.trim(),
       ...(typeof payload.requestId === "string"
         ? { requestId: payload.requestId }
         : {}),
-      ...(safeRouting(payload.routing)
-        ? { routing: safeRouting(payload.routing) }
-        : {}),
+      ...(routing ? { routing } : {}),
     };
   } catch (error) {
     if (error instanceof ShervOSNotConfiguredError) throw error;
     if (error instanceof ShervOSRequestError) throw error;
     if (error instanceof Error && error.name === "AbortError") {
-      throw new ShervOSRequestError("Sherv OS timed out while explaining the report.");
+      throw new ShervOSRequestError(
+        "Sherv OS timed out while explaining the report.",
+      );
     }
     throw new ShervOSRequestError();
   } finally {
