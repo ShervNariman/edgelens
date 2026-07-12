@@ -56,6 +56,33 @@ export const CHECK_LAYERS = {
     label: "Rule-based fixes",
     short: "Fixes",
     blurb:
-      "Deterministic before/after templates — review and apply manually in your editor.",
+      "Deterministic before/after templates — review and apply manually in your editor. Not perfect source diffs.",
   },
 } as const;
+
+/** Visible local-only privacy boundary (SHE-149). */
+export const PRIVACY_LOCAL_ONLY =
+  "Local-only: files and pasted source stay in your browser. EdgeLens never uploads component code, stores it remotely, or sends source to analytics.";
+
+/** First-run 3-step explanation. */
+export const ONBOARDING_STEPS = [
+  {
+    step: 1,
+    title: "Load a component",
+    detail: "Open a local .tsx/.jsx file, paste source, or pick an example.",
+  },
+  {
+    step: 2,
+    title: "Analyze",
+    detail: "Run a deterministic pre-flight check — state completeness first.",
+  },
+  {
+    step: 3,
+    title: "Force states & copy fixes",
+    detail: "Simulate Error/Disabled/Loading, then copy a rule-based fix template.",
+  },
+] as const;
+
+/** Preview honesty — not arbitrary JSX execution. */
+export const PREVIEW_SIMULATION_NOTE =
+  "Preview is simulated and type-aware from detected primitives — it does not execute arbitrary pasted JSX.";

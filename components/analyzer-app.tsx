@@ -7,9 +7,13 @@ import type {
   ComponentState,
 } from "@/types/analysis";
 import { analyzeComponent } from "@/lib/analyze";
+import { captureEvent } from "@/lib/analytics";
 import { CODE_EXAMPLES, findExampleByCode, type CodeExample } from "@/examples";
 import { Hero } from "@/components/hero";
-import { CodeInputPanel } from "@/components/code-input-panel";
+import {
+  CodeInputPanel,
+  type LocalFileMeta,
+} from "@/components/code-input-panel";
 import { ResultsPanel } from "@/components/results-panel";
 import { PreviewPane } from "@/components/preview-pane";
 import { SiteFooter } from "@/components/site-footer";
@@ -20,7 +24,10 @@ import {
   DEMO_STORY,
   HERO_SUPPORT,
   LIMITATION_COPY,
+  PRIVACY_LOCAL_ONLY,
 } from "@/lib/product-copy";
+import type { LocalFileError, SourceOrigin } from "@/lib/local-file";
+import { sourceKindForAnalytics } from "@/lib/local-file";
 
 /** Launch demo: happy-path form that forgets loading/error/disabled states. */
 const RECORDING_EXAMPLE_ID = "login-form";
@@ -53,11 +60,15 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
   const [selectedExample, setSelectedExample] = useState<CodeExample | null>(
     initialExample
   );
+  const [sourceOrigin, setSourceOrigin] = useState<SourceOrigin>("example");
+  const [localFile, setLocalFile] = useState<LocalFileMeta | null>(null);
+  const [fileError, setFileError] = useState<LocalFileError | null>(null);
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [forcedState, setForcedState] = useState<ComponentState>("default");
   const [pendingAxe, setPendingAxe] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const scrollToAnalyzer = useCallback(() => {
     analyzerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -65,21 +76,76 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
 
   const handleCodeChange = useCallback((value: string) => {
     setCode(value);
-    setSelectedExample(findExampleByCode(value) ?? null);
+    const matched = findExampleByCode(value);
+    setSelectedExample(matched ?? null);
+    setSourceOrigin(matched ? "example" : "pasted");
+    setLocalFile(null);
     setReport(null);
+    setError(null);
+    setStatusMessage(null);
   }, []);
 
   const handleSelectExample = useCallback((example: CodeExample) => {
     setSelectedExample(example);
     setCode(example.code);
+    setSourceOrigin("example");
+    setLocalFile(null);
     setReport(null);
     setForcedState("default");
+    setError(null);
+    setFileError(null);
+    setStatusMessage(`Loaded example “${example.label}”.`);
+  }, []);
+
+  const handleLocalFileLoaded = useCallback(
+    (payload: {
+      code: string;
+      fileName: string;
+      extension: string;
+      byteLength: number;
+      sizeBand: string;
+    }) => {
+      setCode(payload.code);
+      setSelectedExample(null);
+      setSourceOrigin("local-file");
+      setLocalFile({
+        fileName: payload.fileName,
+        extension: payload.extension,
+        byteLength: payload.byteLength,
+        sizeBand: payload.sizeBand,
+      });
+      setReport(null);
+      setForcedState("default");
+      setError(null);
+      setFileError(null);
+      setStatusMessage("Local file loaded in this browser. Click Analyze.");
+    },
+    []
+  );
+
+  const handleForceState = useCallback((state: ComponentState) => {
+    setForcedState(state);
+    if (state !== "default") {
+      captureEvent("state_forced", { state });
+    }
   }, []);
 
   const handleAnalyze = useCallback(() => {
+    if (!code.trim()) {
+      setError("Source is empty. Load a local file, paste code, or pick an example.");
+      setFileError({
+        code: "empty",
+        message:
+          "Source is empty. Open a local file, paste a component, or load an example.",
+      });
+      return;
+    }
+
     setIsAnalyzing(true);
     setError(null);
+    setFileError(null);
     setPendingAxe(false);
+    setStatusMessage("Running deterministic pre-flight checks…");
 
     window.setTimeout(() => {
       try {
@@ -87,14 +153,30 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
         setReport(next);
         setForcedState("default");
         setPendingAxe(true);
+        const gaps = next.stateCoverage.filter((s) => s.required && !s.present)
+          .length;
+        setStatusMessage(
+          next.parseErrors.length > 0
+            ? `Analysis complete with parse recovery notes · ${next.summary.totalIssues} findings.`
+            : gaps > 0
+              ? `Analysis complete · ${gaps} state gap${gaps === 1 ? "" : "s"} to review.`
+              : `Analysis complete · score ${next.summary.score}.`
+        );
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Analysis failed");
+        const message =
+          err instanceof Error ? err.message : "Unexpected analysis failure";
+        setError(message);
         setReport(null);
+        setStatusMessage(null);
+        captureEvent("analysis_failed", {
+          source_kind: sourceKindForAnalytics(sourceOrigin),
+          reason: "unexpected_error",
+        });
       } finally {
         setIsAnalyzing(false);
       }
     }, isRecording ? 180 : 350);
-  }, [code, isRecording]);
+  }, [code, isRecording, sourceOrigin]);
 
   const handleAxeResults = useCallback((violations: AxeViolation[]) => {
     setPendingAxe(false);
@@ -129,6 +211,7 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
         setReport(next);
         setForcedState("default");
         setPendingAxe(true);
+        setStatusMessage("Recording demo analyzed.");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Analysis failed");
         setReport(null);
@@ -234,16 +317,27 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
                 <p className="max-w-2xl text-sm text-muted-foreground">
                   {HERO_SUPPORT}
                 </p>
+                <p className="max-w-2xl text-[11px] text-muted-foreground/90">
+                  {PRIVACY_LOCAL_ONLY}
+                </p>
               </div>
             </div>
           )}
+
+          <div className="sr-only" aria-live="polite" aria-atomic="true">
+            {statusMessage}
+          </div>
 
           {error && (
             <div
               role="alert"
               className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
             >
-              {error}
+              <p className="font-medium">Unexpected error</p>
+              <p className="mt-1">{error}</p>
+              <p className="mt-2 text-xs text-destructive/90">
+                Try a smaller file, fix syntax, or load a built-in example.
+              </p>
             </div>
           )}
 
@@ -270,6 +364,11 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
                 isAnalyzing={isAnalyzing}
                 selectedExample={selectedExample}
                 onSelectExample={handleSelectExample}
+                sourceOrigin={sourceOrigin}
+                localFile={localFile}
+                onLocalFileLoaded={handleLocalFileLoaded}
+                fileError={fileError}
+                onFileError={setFileError}
                 compact={isRecording}
               />
             </section>
@@ -288,25 +387,39 @@ export function AnalyzerApp({ mode = "default" }: AnalyzerAppProps) {
                   detectedComponents={report?.detectedComponents ?? []}
                   issues={report?.issues ?? []}
                   forcedState={forcedState}
-                  onForceState={setForcedState}
+                  onForceState={handleForceState}
                   runAxe={pendingAxe && Boolean(report)}
                   onAxeResults={handleAxeResults}
                 />
               </PreviewErrorBoundary>
 
               <div className="rounded-xl border border-border/70 bg-card/20 p-4 sm:p-5">
-                <div className="mb-4 flex items-center justify-between gap-2">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-sm font-medium tracking-wide">
                     Analysis report
                   </h3>
-                  {report && (
-                    <span className="font-mono text-[10px] text-muted-foreground">
-                      {report.componentName ?? "component"} ·{" "}
-                      {report.primaryType}
+                  <div className="flex flex-wrap items-center gap-2 font-mono text-[10px] text-muted-foreground">
+                    <span className="rounded border border-border/60 bg-muted/30 px-1.5 py-0.5">
+                      {sourceOrigin === "local-file"
+                        ? "local file"
+                        : sourceOrigin === "example"
+                          ? "example"
+                          : "pasted"}
                     </span>
-                  )}
+                    {report && (
+                      <span>
+                        {report.componentName ?? "component"} ·{" "}
+                        {report.primaryType}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <ResultsPanel report={report} isAnalyzing={isAnalyzing} />
+                <ResultsPanel
+                  report={report}
+                  isAnalyzing={isAnalyzing}
+                  sourceOrigin={sourceOrigin}
+                  hasSource={Boolean(code.trim())}
+                />
               </div>
             </section>
           </div>
