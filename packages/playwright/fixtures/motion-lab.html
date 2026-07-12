@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>MotionGuard Motion Lab Fixture</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at top left, #d7e8ff 0%, transparent 40%),
+          linear-gradient(160deg, #f7fafc 0%, #e8eef5 100%);
+        color: #102033;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 48px 24px;
+      }
+      h1 {
+        font-size: 2rem;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0 0 24px;
+        max-width: 42ch;
+      }
+      .stage {
+        position: relative;
+        height: 220px;
+        border: 1px solid #b7c6d8;
+        background: rgba(255, 255, 255, 0.7);
+        overflow: hidden;
+      }
+      .panel {
+        position: absolute;
+        inset: 24px auto auto 24px;
+        width: 160px;
+        height: 96px;
+        display: grid;
+        place-items: center;
+        background: #1d4f91;
+        color: white;
+        border: 0;
+        transform: translateX(0) scale(1);
+        opacity: 1;
+        transition:
+          transform 600ms ease,
+          opacity 600ms ease,
+          width 600ms ease,
+          height 600ms ease;
+      }
+      .panel.is-open {
+        transform: translateX(280px) scale(1.08);
+        width: 220px;
+        height: 128px;
+      }
+      .panel.is-exiting {
+        transform: translateX(420px) scale(0.85);
+        opacity: 0.15;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      button {
+        appearance: none;
+        border: 1px solid #7f93ab;
+        background: white;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+      button:focus-visible {
+        outline: 3px solid #1d4f91;
+        outline-offset: 2px;
+      }
+      #status {
+        margin-top: 16px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .panel {
+          transition-duration: 0.01ms;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Motion lab</h1>
+      <p>Controlled fixture for MotionGuard adversity scenarios. Not a product UI.</p>
+      <div class="stage" data-mg-stage>
+        <button
+          id="target"
+          class="panel"
+          data-mg-target
+          type="button"
+          aria-pressed="false"
+        >
+          Target
+        </button>
+      </div>
+      <div class="controls">
+        <button id="toggle" data-mg-trigger type="button">Toggle</button>
+        <button id="replace" data-mg-replace type="button">Replace target</button>
+        <button id="remove" data-mg-remove type="button">Remove target</button>
+        <button id="secondary" data-mg-secondary type="button">Secondary</button>
+      </div>
+      <div id="status" data-mg-status aria-live="polite">idle</div>
+    </main>
+    <script>
+      const target = () => document.querySelector("[data-mg-target]");
+      const status = document.querySelector("[data-mg-status]");
+      let open = false;
+      let activations = 0;
+
+      function setStatus(value) {
+        status.textContent = value;
+        status.dataset.state = value;
+      }
+
+      function sync() {
+        const el = target();
+        if (!el) {
+          setStatus("missing");
+          return;
+        }
+        el.classList.toggle("is-open", open);
+        el.classList.toggle("is-exiting", false);
+        el.setAttribute("aria-pressed", open ? "true" : "false");
+        setStatus(open ? "open" : "closed");
+      }
+
+      function toggle() {
+        const el = target();
+        if (!el) return;
+        activations += 1;
+        window.__mgActivations = activations;
+        if (open) {
+          el.classList.add("is-exiting");
+          setStatus("exiting");
+          open = false;
+          window.setTimeout(() => {
+            el.classList.remove("is-exiting");
+            sync();
+          }, 300);
+        } else {
+          open = true;
+          setStatus("entering");
+          sync();
+        }
+      }
+
+      document.querySelector("[data-mg-trigger]").addEventListener("click", toggle);
+      document.querySelector("[data-mg-target]")?.addEventListener("click", () => {
+        activations += 1;
+        window.__mgActivations = activations;
+      });
+      document.querySelector("[data-mg-secondary]").addEventListener("click", () => {
+        setStatus("secondary-activated");
+      });
+      document.querySelector("[data-mg-remove]").addEventListener("click", () => {
+        target()?.remove();
+        setStatus("removed");
+      });
+      document.querySelector("[data-mg-replace]").addEventListener("click", () => {
+        const current = target();
+        if (!current) return;
+        const next = current.cloneNode(true);
+        next.id = "target-replaced";
+        next.textContent = "Replaced";
+        current.replaceWith(next);
+        next.addEventListener("click", () => {
+          activations += 1;
+          window.__mgActivations = activations;
+        });
+        setStatus("replaced");
+      });
+
+      window.__mg = {
+        toggle,
+        getBox: () => {
+          const el = target();
+          if (!el) return null;
+          const rect = el.getBoundingClientRect();
+          return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+        },
+        getActivations: () => activations,
+        getState: () => status?.dataset.state ?? "unknown",
+      };
+      sync();
+    </script>
+  </body>
+</html>

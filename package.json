@@ -1,47 +1,33 @@
 {
-  "name": "edgelens",
-  "version": "0.1.0",
+  "name": "motionguard-workspace",
+  "version": "0.0.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint",
-    "audit:public": "node scripts/public-safety-scan.mjs"
+  "description": "Open-source animation stress testing for production UI motion.",
+  "license": "MIT",
+  "packageManager": "pnpm@11.12.0",
+  "engines": {
+    "node": ">=22.0.0"
   },
-  "dependencies": {
-    "@babel/parser": "^8.0.4",
-    "@babel/types": "^8.0.4",
-    "@base-ui/react": "^1.6.0",
-    "@radix-ui/react-label": "^2.1.11",
-    "@radix-ui/react-scroll-area": "^1.2.14",
-    "@radix-ui/react-separator": "^1.1.11",
-    "@radix-ui/react-slot": "^1.3.0",
-    "@radix-ui/react-tabs": "^1.1.17",
-    "@radix-ui/react-tooltip": "^1.2.12",
-    "axe-core": "^4.12.1",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "framer-motion": "^12.42.2",
-    "lucide-react": "^1.24.0",
-    "next": "15.5.20",
-    "next-themes": "^0.4.6",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "shadcn": "^4.13.0",
-    "tailwind-merge": "^3.6.0",
-    "tw-animate-css": "^1.4.0"
+  "scripts": {
+    "build": "pnpm -r build",
+    "clean": "pnpm -r clean && node scripts/clean.mjs coverage .motionguard",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:coverage": "pnpm -r test:coverage",
+    "package:check": "pnpm -r --workspace-concurrency=1 --if-present package:check",
+    "qa": "node scripts/qa-five-loops.mjs",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm package:check"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "15.5.20",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "@arethetypeswrong/cli": "0.18.5",
+    "@biomejs/biome": "2.5.3",
+    "@types/node": "24.10.1",
+    "publint": "0.3.21",
+    "tsup": "8.5.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
   }
 }

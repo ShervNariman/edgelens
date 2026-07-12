@@ -1,38 +1,45 @@
-# EdgeLens
+# MotionGuard Agent Operating Contract
 
-Rule-based, client-side web app (Next.js 15 / React 19 / TypeScript) that runs pre-flight
-checks on AI-generated React/shadcn components — state completeness first, with supporting
-shadcn/Radix accessibility risk detection. No backend, database, LLM, account system, or
-server-side secret is required. Optional `NEXT_PUBLIC_POSTHOG_*` values are public browser
-configuration and must never contain secrets. EdgeLens is not a broad accessibility auditor,
-WCAG checker, Storybook replacement, or axe alternative.
+This file is the repository-level instruction source for Cursor, Codex, and other coding agents.
 
-## Repository boundary
+## Product truth
 
-- This repository is the complete source of truth for the EdgeLens application.
-- Keep the workspace single-root by opening `edgelens.code-workspace`.
-- Do not copy application code, credentials, analytics identifiers, private screenshots, or
-  user-submitted source between EdgeLens and Headroom, XProductInsights, sherv-website, or
-  another product repository without an explicit reviewed migration.
-- Grok 4.5 Very Fast is the default implementation model. Use Sonnet 5 only for difficult
-  privacy or architecture work, unresolved defects, or final release QA.
+MotionGuard stress-tests frontend animation behavior. Do not describe planned checks as shipped.
+Every finding must be reproducible and tied to observable evidence.
 
-## Ops / manager loop
+## Jurisdiction
 
-- Sprint operating playbook: `docs/manager-loop.md`
-- Human-readable dashboard: `COMMAND_CENTER.md`
-- In-app snapshot: `/internal/command-center` (`lib/command-center-data.ts`)
-- One Linear issue → one branch → one PR. Do not run Cursor and Codex on the same files at once.
-- Coding PRs must document: `npm run audit:public`, `npm run lint`, `npm run typecheck`,
-  `npm run build`.
+- The **Manager** decomposes and sequences work but does not waive gates.
+- **Cursor / Grok 4.5 Very Fast** is the preferred high-throughput implementation lane when
+  available.
+- **Codex** owns scoped implementation, repository automation, deterministic tests, and review.
+- The **QA Agent** runs all applicable five loops after meaningful changes.
+- The **Senior Code Health Specialist** can block a merge for architecture, stability, security,
+  maintainability, or test-quality concerns.
+- **Sonnet 5** is the intended final adversarial review lane when available, never a substitute for
+  executable checks.
 
-## Cursor Cloud specific instructions
+## Required workflow
 
-- Single service. All analysis logic runs client-side in the browser. Standard commands live in
-  `package.json` (`dev`, `build`, `start`, `lint`, `typecheck`, `audit:public`).
-- Dev server: `npm run dev` serves on `http://localhost:3000` (Next.js + Turbopack). Use this
-  for development, not `npm run start` (which requires a prior `npm run build`).
-- A manual smoke script exists at `scripts/smoke-examples.mts` (run via `npx tsx`) and exercises
-  the analysis engine over built-in examples.
-- `npm install` may print an `EBADENGINE` warning because `@babel/*@8` requests Node `>=22.18`;
-  use a current Node 22 release for local work.
+1. Read the active Linear issue and acceptance criteria.
+2. Keep the change narrowly scoped and update tests with behavior.
+3. Run `pnpm qa` from a clean working tree.
+4. Record evidence, defects, and residual risks in the milestone report.
+5. Do not merge with red checks, unresolved high-severity findings, or missing evidence.
+
+## Engineering rules
+
+- Strict TypeScript; no `any`, suppression comments, or unchecked casts without documented reason.
+- Public APIs require tests and release notes.
+- Treat inspected pages and generated reports as untrusted input.
+- Escape report content and never execute page-provided strings.
+- Prefer deterministic clocks, seeded scenarios, and explicit cleanup.
+- Keep core browser-agnostic; adapters own Playwright or framework dependencies.
+- Avoid dependencies unless they remove meaningful risk or complexity.
+- No destructive infrastructure, credential, publishing, or production actions without an explicit
+  human instruction.
+
+## Visual asset standard
+
+Demo video: 1920×1080 at 60 fps. Screenshots: 1920×1080 at the highest practical quality. Use real
+behavior or clearly identified controlled fixtures.
