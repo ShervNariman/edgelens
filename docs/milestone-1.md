@@ -13,7 +13,7 @@ EdgeLens now has a minimal Vitest harness, example smoke and five-repeat determi
 | Item | Result |
 | --- | --- |
 | Test stack | Vitest 3 + focused `*.test.ts` for parser, state/a11y/pattern rules, fixes, scoring/grouping, invalid recovery, all built-in examples |
-| Smoke command | `npm run smoke` → `tsx scripts/smoke-examples.mts` (no unpinned `npx`) |
+| Smoke command | `npm run smoke` → `tsx scripts/smoke-examples.ts` (no unpinned `npx`) |
 | Determinism | `npm run test:determinism` → five repeats; compares stable fingerprints (strips `id` / `analyzedAt`) |
 | CI | `audit:public`, typecheck, lint, `test`, `test:determinism`, `smoke`, `build` |
 | CodeQL | Weekly + PR/push on `main`; JS/TS only; `security-extended`; read + `security-events: write` |
@@ -21,7 +21,7 @@ EdgeLens now has a minimal Vitest harness, example smoke and five-repeat determi
 | Isolation | Runtime scan adds MotionGuard / Release Room / XProductInsights / sherv-website forms; docs/history excluded |
 | License | MIT `LICENSE` + README |
 | README asset | `docs/assets/edgelens-analyzer.svg` (SVG product mock; photo follow-up noted) |
-| Unused deps | Removed unused `@radix-ui/*`, `framer-motion`, and `shadcn` CLI after proving no app imports |
+| Unused deps | Removed unused `@radix-ui/*` and `framer-motion` after proving no app imports; kept `shadcn` (CSS import `shadcn/tailwind.css`) |
 
 ## Required validation commands
 

@@ -5,8 +5,20 @@ import type { AnalysisReport } from "@/types/analysis";
  * `id` and `analyzedAt` intentionally use wall-clock values at analysis time.
  */
 export function stableReport(report: AnalysisReport) {
-  const { id: _id, analyzedAt: _analyzedAt, ...rest } = report;
-  return rest;
+  return {
+    sourceCode: report.sourceCode,
+    componentName: report.componentName,
+    primaryType: report.primaryType,
+    detectedComponents: report.detectedComponents,
+    stateCoverage: report.stateCoverage,
+    issues: report.issues,
+    a11yTree: report.a11yTree,
+    axeViolations: report.axeViolations,
+    previewDomChecked: report.previewDomChecked,
+    suggestedFixes: report.suggestedFixes,
+    summary: report.summary,
+    parseErrors: report.parseErrors,
+  };
 }
 
 export function stableFingerprint(report: AnalysisReport): string {
