@@ -40,10 +40,12 @@ const SIMULATABLE: ComponentState[] = [
   "hover",
   "focus",
   "active",
+  "selected",
   "disabled",
   "loading",
   "error",
   "empty",
+  "success",
 ];
 
 /** Short, helpful copy when simulating a state not found in source. */
@@ -52,10 +54,12 @@ const STATE_GUIDANCE: Record<ComponentState, string> = {
   hover: "Add hover: utilities or rely on shadcn primitive hover styles.",
   focus: "Add focus-visible:ring styles for keyboard users.",
   active: "Use active: or data-[state=active] for pressed/selected feedback.",
+  selected: "Expose checked/selected visuals via aria-checked or data-[state=checked].",
   disabled: "Support a disabled prop with muted opacity and pointer-events-none.",
   loading: "Expose isLoading — disable the control and show a spinner.",
   error: "Surface validation/failure with aria-invalid or a destructive Alert.",
   empty: "Guard empty collections with a placeholder before mapping items.",
+  success: "After async success, show a brief status message or toast.",
 };
 
 interface PreviewPaneProps {
@@ -369,9 +373,10 @@ function stateFlags(state: ComponentState) {
     isLoading: state === "loading",
     isHover: state === "hover",
     isFocus: state === "focus",
-    isActive: state === "active",
+    isActive: state === "active" || state === "selected",
     isError: state === "error",
     isEmpty: state === "empty",
+    isSuccess: state === "success",
   };
 }
 
@@ -382,7 +387,7 @@ function ButtonPreview({
   meta: PreviewMeta;
   state: ComponentState;
 }) {
-  const { isDisabled, isLoading, isHover, isFocus, isActive, isError, isEmpty } =
+  const { isDisabled, isLoading, isHover, isFocus, isActive, isError, isEmpty, isSuccess } =
     stateFlags(state);
 
   if (isEmpty) {
@@ -393,6 +398,17 @@ function ButtonPreview({
           <p className="text-sm font-medium text-foreground">No action available</p>
           <p className="mt-1 text-xs text-muted-foreground">Empty state — nothing to render</p>
         </div>
+      </div>
+    );
+  }
+
+  if (isSuccess) {
+    return (
+      <div className="flex flex-col items-center gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-6 py-10 text-center transition-all duration-300">
+        <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200" role="status">
+          Saved successfully
+        </p>
+        <p className="text-xs text-muted-foreground">Success state after the async action</p>
       </div>
     );
   }

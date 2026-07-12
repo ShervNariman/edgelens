@@ -6,6 +6,7 @@ import type {
   ComponentState,
   DetectedComponent,
   DetectedComponentType,
+  RequirementLevel,
   StateCoverage,
   SuggestedFix,
 } from "@/types/analysis";
@@ -14,34 +15,44 @@ import { detectComponents, extractComponentName, parseSource } from "./parser";
 import { checkMissingStates } from "./rules/states";
 import { checkAccessibility } from "./rules/a11y";
 import { checkPatterns } from "./rules/patterns";
+import {
+  buildCheckStatuses,
+  dedupeIssues,
+  stripUnreliableLocations,
+  withDefaultEvidence,
+} from "./rules/postprocess";
 import { buildSuggestedFixes } from "./fixes";
 import { buildA11yTree } from "./a11y-tree";
 import { inferPrimaryType } from "./preview-meta";
 
-const REQUIRED_STATES: ComponentState[] = [
+const BASE_STATES: ComponentState[] = [
   "default",
   "hover",
   "focus",
   "disabled",
-];
-
-const OPTIONAL_STATES: ComponentState[] = [
   "active",
   "loading",
   "error",
   "empty",
+  "success",
+  "selected",
 ];
 
 function computeScore(issues: AnalysisIssue[], coverage: StateCoverage[]): number {
   let score = 100;
 
   for (const issue of issues) {
-    if (issue.severity === "critical") score -= 12;
-    else if (issue.severity === "warning") score -= 6;
-    else score -= 2;
+    // Low-confidence findings weigh less so triage stays calm
+    const weight =
+      issue.confidence === "low" ? 0.5 : issue.confidence === "medium" ? 0.85 : 1;
+    if (issue.severity === "critical") score -= 12 * weight;
+    else if (issue.severity === "warning") score -= 6 * weight;
+    else score -= 2 * weight;
   }
 
-  const requiredMissing = coverage.filter((s) => s.required && !s.present).length;
+  const requiredMissing = coverage.filter(
+    (s) => s.requirement === "required" && !s.present
+  ).length;
   score -= requiredMissing * 5;
 
   return Math.max(0, Math.min(100, Math.round(score)));
@@ -61,6 +72,9 @@ function buildSummary(
     statesCovered: coverage.filter((s) => s.present).length,
     statesTotal: coverage.length,
     componentsDetected: components.length,
+    highConfidenceCount: issues.filter((i) => i.confidence === "high").length,
+    mediumConfidenceCount: issues.filter((i) => i.confidence === "medium").length,
+    lowConfidenceCount: issues.filter((i) => i.confidence === "low").length,
   };
 }
 
@@ -92,6 +106,9 @@ export function analyzeComponent(
           title: "No source code provided",
           description: "Paste a React/shadcn component to analyze.",
           suggestion: "Paste JSX/TSX from Cursor or your editor, then click Analyze.",
+          evidence: "empty trimmed source",
+          confidence: "high",
+          requirement: "required",
         },
       ],
       a11yTree: [],
@@ -107,35 +124,52 @@ export function analyzeComponent(
         statesCovered: 0,
         statesTotal: 0,
         componentsDetected: 0,
+        highConfidenceCount: 1,
+        mediumConfidenceCount: 0,
+        lowConfidenceCount: 0,
       },
       parseErrors: ["Empty source"],
+      checkStatuses: [
+        {
+          id: "empty-source",
+          label: "All rules",
+          status: "skipped",
+          reason: "No source code was provided.",
+        },
+      ],
+      locationsUnreliable: false,
     };
   }
 
   const { ast, errors: parseErrors } = parseSource(trimmed);
+  const locationsUnreliable = parseErrors.length > 0;
   const componentName = extractComponentName(ast, trimmed);
   const detectedComponents = detectComponents(ast, trimmed);
   const primaryType = inferPrimaryType(detectedComponents, trimmed);
 
   const stateIssues = checkMissingStates(trimmed, primaryType, detectedComponents).map(
-    (issue) => ({ ...issue, source: "state-rule" as const })
+    (issue) => ({
+      ...withDefaultEvidence(issue),
+      source: "state-rule" as const,
+    })
   );
   const a11yIssues = checkAccessibility(trimmed, detectedComponents).map((issue) => ({
-    ...issue,
+    ...withDefaultEvidence(issue),
     source: "a11y-rule" as const,
   }));
   const patternIssues = checkPatterns(trimmed, detectedComponents).map((issue) => ({
-    ...issue,
+    ...withDefaultEvidence(issue),
     source: "static" as const,
   }));
   const axeIssues = axeViolationsToIssues(axeViolations);
 
-  const issues: AnalysisIssue[] = [
+  let issues: AnalysisIssue[] = dedupeIssues([
     ...stateIssues,
     ...a11yIssues,
     ...axeIssues,
     ...patternIssues,
-  ];
+  ]);
+  issues = stripUnreliableLocations(issues, locationsUnreliable);
 
   const stateCoverage = buildStateCoverage(trimmed, primaryType, stateIssues);
   const suggestedFixes: SuggestedFix[] = buildSuggestedFixes(issues, trimmed, primaryType);
@@ -144,6 +178,14 @@ export function analyzeComponent(
     ...axeIssues,
   ]);
   const summary = buildSummary(issues, stateCoverage, detectedComponents);
+  const checkStatuses = buildCheckStatuses({
+    parseErrors,
+    locationsUnreliable,
+    primaryType,
+    componentsDetected: detectedComponents.length,
+    previewDomChecked,
+    source: trimmed,
+  });
 
   const report: AnalysisReport = {
     id,
@@ -160,6 +202,8 @@ export function analyzeComponent(
     suggestedFixes,
     summary,
     parseErrors,
+    checkStatuses,
+    locationsUnreliable,
   };
 
   // The first deterministic pass is the product activation event. The later
@@ -196,6 +240,13 @@ function axeViolationsToIssues(violations: AxeViolation[]): AnalysisIssue[] {
     description: v.description,
     suggestion: `See axe rule “${v.id}” — ${v.helpUrl}`,
     a11yRuleId: v.id,
+    evidence: `axe-core violation id=${v.id} nodes=${v.nodes}`,
+    confidence: (v.impact === "critical" || v.impact === "serious"
+      ? "high"
+      : v.impact === "moderate"
+        ? "medium"
+        : "low") as AnalysisIssue["confidence"],
+    requirement: "recommended" as const,
   }));
 }
 
@@ -221,6 +272,14 @@ function buildStateCoverage(
       loading: [/loading/, /isLoading/, /pending/, /Spinner/, /Loader/, /aria-busy/],
       error: [/error/, /destructive/, /aria-invalid/, /invalid/],
       empty: [/empty/, /no results/i, /length\s*===\s*0/, /EmptyState/, /Empty\s*State/],
+      success: [/success/, /isSuccess/, /toast\(/i, /CheckCircle/],
+      selected: [
+        /selected/,
+        /aria-checked/,
+        /aria-selected/,
+        /data-\[state=checked\]/,
+        /checked\s*=/,
+      ],
     };
     for (const re of patterns[state]) {
       if (re.test(source)) return re.source;
@@ -236,8 +295,10 @@ function buildStateCoverage(
     primaryType === "Checkbox" ||
     primaryType === "Switch" ||
     primaryType === "Dialog" ||
+    primaryType === "Sheet" ||
     primaryType === "DropdownMenu" ||
-    primaryType === "Form";
+    primaryType === "Form" ||
+    primaryType === "Popover";
 
   const needsLoading =
     primaryType === "Button" ||
@@ -254,30 +315,55 @@ function buildStateCoverage(
     primaryType === "Select" ||
     primaryType === "Tabs" ||
     primaryType === "Card" ||
-    /map\s*\(/.test(source) ||
+    /\.map\s*\(/.test(source) ||
     /items?\s*=/.test(lower);
+  const needsSelected =
+    primaryType === "Checkbox" ||
+    primaryType === "Switch" ||
+    primaryType === "Tabs" ||
+    primaryType === "Select";
+  const needsSuccess =
+    primaryType === "Form" ||
+    primaryType === "Dialog" ||
+    primaryType === "Sheet";
+  const needsActive = primaryType === "Tabs" || primaryType === "Button";
 
-  return [
-    ...REQUIRED_STATES.map((state) => ({
+  const requirementFor = (state: ComponentState): RequirementLevel => {
+    if (state === "default") return "required";
+    if (state === "hover" || state === "focus" || state === "disabled") {
+      return interactive ? "required" : "optional";
+    }
+    if (state === "loading") return needsLoading ? "required" : "optional";
+    if (state === "error") return needsError ? "required" : "optional";
+    if (state === "empty") return needsEmpty ? "recommended" : "optional";
+    if (state === "active") return needsActive ? "recommended" : "optional";
+    if (state === "selected") return needsSelected ? "recommended" : "optional";
+    if (state === "success") return needsSuccess ? "optional" : "optional";
+    return "optional";
+  };
+
+  return BASE_STATES.map((state) => {
+    const requirement = requirementFor(state);
+    const evidence = evidenceFor(state);
+    const present =
+      !missing.has(state) &&
+      Boolean(evidence || state === "default");
+    return {
       state,
-      present: !missing.has(state) && Boolean(evidenceFor(state) || state === "default"),
-      evidence: evidenceFor(state),
-      required: interactive || state === "default",
-    })),
-    ...OPTIONAL_STATES.map((state) => {
-      const required =
-        (state === "loading" && needsLoading) ||
-        (state === "error" && needsError) ||
-        (state === "empty" && needsEmpty) ||
-        (state === "active" && (primaryType === "Tabs" || primaryType === "Button"));
-      return {
-        state,
-        present: !missing.has(state) && Boolean(evidenceFor(state)),
-        evidence: evidenceFor(state),
-        required,
-      };
-    }),
-  ];
+      present,
+      evidence,
+      required: requirement === "required",
+      requirement,
+    };
+  });
 }
 
-export { REQUIRED_STATES, OPTIONAL_STATES };
+export { BASE_STATES as REQUIRED_STATES };
+export const OPTIONAL_STATES: ComponentState[] = [
+  "active",
+  "loading",
+  "error",
+  "empty",
+  "success",
+  "selected",
+];

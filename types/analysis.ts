@@ -1,5 +1,11 @@
 export type IssueSeverity = "critical" | "warning" | "info";
 
+/** Deterministic confidence for triage — low findings are visually de-emphasized. */
+export type IssueConfidence = "high" | "medium" | "low";
+
+/** How strongly a state/check is expected for this component type. */
+export type RequirementLevel = "required" | "recommended" | "optional";
+
 /** Where a finding came from — shown as trust badges in the report. */
 export type IssueSource =
   | "static"
@@ -21,11 +27,14 @@ export type ComponentState =
   | "disabled"
   | "loading"
   | "error"
-  | "empty";
+  | "empty"
+  | "success"
+  | "selected";
 
 export type DetectedComponentType =
   | "Button"
   | "Dialog"
+  | "Sheet"
   | "Select"
   | "Input"
   | "Textarea"
@@ -61,6 +70,12 @@ export interface AnalysisIssue {
   suggestion: string;
   fixSnippet?: string;
   a11yRuleId?: string;
+  /** Deterministic signal that triggered this finding (regex/token/heuristic id). */
+  evidence: string;
+  /** Triage confidence — low items should be visually de-emphasized. */
+  confidence: IssueConfidence;
+  /** Whether this check is required / recommended / optional for the detected type. */
+  requirement: RequirementLevel;
 }
 
 /** Issue from a rule engine before provenance is attached. */
@@ -79,6 +94,15 @@ export interface StateCoverage {
   present: boolean;
   evidence?: string;
   required: boolean;
+  requirement: RequirementLevel;
+}
+
+/** Explains why a check did not run or was inconclusive. */
+export interface CheckStatus {
+  id: string;
+  label: string;
+  status: "skipped" | "inconclusive";
+  reason: string;
 }
 
 export interface A11yNode {
@@ -98,6 +122,9 @@ export interface AnalysisSummary {
   statesCovered: number;
   statesTotal: number;
   componentsDetected: number;
+  highConfidenceCount: number;
+  mediumConfidenceCount: number;
+  lowConfidenceCount: number;
 }
 
 export interface AxeViolation {
@@ -125,6 +152,10 @@ export interface AnalysisReport {
   suggestedFixes: SuggestedFix[];
   summary: AnalysisSummary;
   parseErrors: string[];
+  /** Checks that did not run or were inconclusive (parser recovery, missing cues, etc.). */
+  checkStatuses: CheckStatus[];
+  /** True when parse recovery makes line/column locations unreliable. */
+  locationsUnreliable: boolean;
 }
 
 export interface SuggestedFix {
@@ -137,6 +168,8 @@ export interface SuggestedFix {
   whyItMatters: string;
   /** What to do */
   suggestion: string;
+  /** Manual adaptation note for copyable snippets */
+  adaptNote?: string;
   /** @deprecated prefer problem + whyItMatters */
   description?: string;
   before?: string;

@@ -17,6 +17,9 @@ function whyFor(issue: AnalysisIssue): string {
   return "Small pattern gaps compound quickly in AI-generated UI and are easy to miss in review.";
 }
 
+const ADAPT_NOTE =
+  "Adapt prop names, imports, and copy to your project — this snippet is a conceptual template, not a drop-in for unknown APIs.";
+
 const FIX_TEMPLATES: Partial<
   Record<
     string,
@@ -30,6 +33,7 @@ const FIX_TEMPLATES: Partial<
     problem: issue.title,
     whyItMatters: whyFor(issue),
     suggestion: "Disable the control and show a spinner while the action is pending.",
+    adaptNote: ADAPT_NOTE,
     language: "tsx",
     before: `<Button onClick={onSave}>
   Save changes
@@ -46,6 +50,21 @@ export function SubmitButton({ isLoading }: { isLoading?: boolean }) {
   )
 }`,
   }),
+  "state-async-submit-guard": (issue) => ({
+    id: `fix-${issue.id}`,
+    issueId: issue.id,
+    title: "Protect against duplicate submits",
+    problem: issue.title,
+    whyItMatters: whyFor(issue),
+    suggestion:
+      "Disable the submit control while pending and expose aria-busy for assistive tech.",
+    adaptNote: ADAPT_NOTE,
+    language: "tsx",
+    before: `<Button type="submit">Invite teammate</Button>`,
+    after: `<Button type="submit" disabled={isPending} aria-busy={isPending}>
+  {isPending ? "Sending…" : "Invite teammate"}
+</Button>`,
+  }),
   "state-disabled": (issue) => ({
     id: `fix-${issue.id}`,
     issueId: issue.id,
@@ -53,6 +72,7 @@ export function SubmitButton({ isLoading }: { isLoading?: boolean }) {
     problem: issue.title,
     whyItMatters: whyFor(issue),
     suggestion: "Accept a disabled prop and mute the control so it can’t be activated.",
+    adaptNote: ADAPT_NOTE,
     language: "tsx",
     before: `<Button onClick={onContinue}>Continue</Button>`,
     after: `<Button
@@ -69,6 +89,7 @@ export function SubmitButton({ isLoading }: { isLoading?: boolean }) {
     problem: issue.title,
     whyItMatters: whyFor(issue),
     suggestion: "Use focus-visible ring utilities so keyboard users can see focus.",
+    adaptNote: ADAPT_NOTE,
     language: "tsx",
     before: `<Button className="rounded-md px-3">Continue</Button>`,
     after: `<Button className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
@@ -82,6 +103,7 @@ export function SubmitButton({ isLoading }: { isLoading?: boolean }) {
     problem: issue.title,
     whyItMatters: whyFor(issue),
     suggestion: "Use theme-aware hover utilities (or rely on shadcn Button variants).",
+    adaptNote: ADAPT_NOTE,
     language: "tsx",
     before: `<Button className="bg-primary text-primary-foreground">Continue</Button>`,
     after: `<Button className="hover:bg-primary/90 transition-colors">
@@ -95,6 +117,7 @@ export function SubmitButton({ isLoading }: { isLoading?: boolean }) {
     problem: issue.title,
     whyItMatters: whyFor(issue),
     suggestion: "Connect aria-invalid and an error message to the control.",
+    adaptNote: ADAPT_NOTE,
     language: "tsx",
     before: `<div className="space-y-2">
   <Input id="email" type="email" />
@@ -128,6 +151,7 @@ export function EmailField({ error }: { error?: string }) {
     problem: issue.title,
     whyItMatters: whyFor(issue),
     suggestion: "Guard zero-length collections before mapping to JSX.",
+    adaptNote: ADAPT_NOTE,
     language: "tsx",
     before: `{items.map((item) => (
   <div key={item.id}>{item.label}</div>
@@ -136,6 +160,167 @@ export function EmailField({ error }: { error?: string }) {
   <p className="text-sm text-muted-foreground">No results found.</p>
 ) : (
   items.map((item) => <div key={item.id}>{item.label}</div>)
+)}`,
+  }),
+  "state-search-no-results": (issue) => ({
+    id: `fix-${issue.id}`,
+    issueId: issue.id,
+    title: "Add a no-results + clear branch",
+    problem: issue.title,
+    whyItMatters: whyFor(issue),
+    suggestion: "When filters match nothing, say so and offer a clear/reset action.",
+    adaptNote: ADAPT_NOTE,
+    language: "tsx",
+    before: `{results.map((row) => (
+  <Row key={row.id} row={row} />
+))}`,
+    after: `{results.length === 0 ? (
+  <div className="space-y-2">
+    <p className="text-sm text-muted-foreground">No results for “{query}”.</p>
+    <Button variant="ghost" onClick={onClear}>Clear search</Button>
+  </div>
+) : (
+  results.map((row) => <Row key={row.id} row={row} />)
+)}`,
+  }),
+  "state-list-retry": (issue) => ({
+    id: `fix-${issue.id}`,
+    issueId: issue.id,
+    title: "Add error + retry for the list",
+    problem: issue.title,
+    whyItMatters: whyFor(issue),
+    suggestion: "Render a failure message with a Retry control that re-runs the fetch.",
+    adaptNote: ADAPT_NOTE,
+    language: "tsx",
+    before: `{projects.map((project) => (
+  <ProjectRow key={project.id} project={project} />
+))}`,
+    after: `{error ? (
+  <div className="space-y-2">
+    <p className="text-sm text-destructive">{error.message}</p>
+    <Button variant="outline" onClick={onRetry}>Retry</Button>
+  </div>
+) : projects.length === 0 ? (
+  <p className="text-sm text-muted-foreground">No projects yet.</p>
+) : (
+  projects.map((project) => (
+    <ProjectRow key={project.id} project={project} />
+  ))
+)}`,
+  }),
+  "state-destructive-confirm": (issue) => ({
+    id: `fix-${issue.id}`,
+    issueId: issue.id,
+    title: "Confirm destructive actions",
+    problem: issue.title,
+    whyItMatters: whyFor(issue),
+    suggestion: "Use AlertDialog (or a confirm Dialog) before delete/remove mutations.",
+    adaptNote: ADAPT_NOTE,
+    language: "tsx",
+    before: `<Button variant="destructive" onClick={onDelete}>
+  Delete member
+</Button>`,
+    after: `<AlertDialog>
+  <AlertDialogTrigger asChild>
+    <Button variant="destructive">Delete member</Button>
+  </AlertDialogTrigger>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Delete this member?</AlertDialogTitle>
+      <AlertDialogDescription>
+        They will lose access immediately. This cannot be undone.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancel</AlertDialogCancel>
+      <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>`,
+  }),
+  "state-pagination-loading": (issue) => ({
+    id: `fix-${issue.id}`,
+    issueId: issue.id,
+    title: "Handle loading-next and end-of-list",
+    problem: issue.title,
+    whyItMatters: whyFor(issue),
+    suggestion:
+      "Disable Load more while fetching; show an end-of-list message when hasMore is false.",
+    adaptNote: ADAPT_NOTE,
+    language: "tsx",
+    before: `<Button onClick={onLoadMore}>Load more</Button>`,
+    after: `{hasMore ? (
+  <Button disabled={isFetchingNext} onClick={onLoadMore}>
+    {isFetchingNext ? "Loading…" : "Load more"}
+  </Button>
+) : (
+  <p className="text-sm text-muted-foreground">You've reached the end.</p>
+)}`,
+  }),
+  "state-form-field-error": (issue) => ({
+    id: `fix-${issue.id}`,
+    issueId: issue.id,
+    title: "Wire field-level form errors",
+    problem: issue.title,
+    whyItMatters: whyFor(issue),
+    suggestion: "Attach aria-invalid and an alert message to each failing field.",
+    adaptNote: ADAPT_NOTE,
+    language: "tsx",
+    before: `<form onSubmit={onSubmit}>
+  <Input name="email" />
+  <Button type="submit">Continue</Button>
+</form>`,
+    after: `<form onSubmit={onSubmit} className="space-y-4">
+  <div className="space-y-2">
+    <Label htmlFor="email">Work email</Label>
+    <Input
+      id="email"
+      name="email"
+      aria-invalid={!!errors.email}
+      aria-describedby={errors.email ? "email-error" : undefined}
+    />
+    {errors.email && (
+      <p id="email-error" role="alert" className="text-sm text-destructive">
+        {errors.email}
+      </p>
+    )}
+  </div>
+  <Button type="submit" disabled={isPending} aria-busy={isPending}>
+    Continue
+  </Button>
+</form>`,
+  }),
+  "state-selected": (issue) => ({
+    id: `fix-${issue.id}`,
+    issueId: issue.id,
+    title: "Expose selected / checked visuals",
+    problem: issue.title,
+    whyItMatters: whyFor(issue),
+    suggestion: "Use checked/selected props and matching data-state styles.",
+    adaptNote: ADAPT_NOTE,
+    language: "tsx",
+    before: `<Checkbox id="billing" />`,
+    after: `<Checkbox
+  id="billing"
+  checked={checked}
+  onCheckedChange={setChecked}
+  className="data-[state=checked]:bg-primary"
+/>`,
+  }),
+  "state-success": (issue) => ({
+    id: `fix-${issue.id}`,
+    issueId: issue.id,
+    title: "Add success feedback",
+    problem: issue.title,
+    whyItMatters: whyFor(issue),
+    suggestion: "After a successful mutation, show inline success or a toast.",
+    adaptNote: ADAPT_NOTE,
+    language: "tsx",
+    before: `<Button type="submit">Save</Button>`,
+    after: `{isSuccess ? (
+  <p className="text-sm text-emerald-700" role="status">Saved successfully.</p>
+) : (
+  <Button type="submit" disabled={isPending}>Save</Button>
 )}`,
   }),
 };
@@ -157,10 +342,20 @@ function beforeFromIssue(issue: AnalysisIssue, primary: DetectedComponentType): 
   <DialogFooter>…</DialogFooter>
 </DialogContent>`;
   }
+  if (issue.element === "Sheet") {
+    return `<SheetContent>
+  {/* missing SheetTitle */}
+</SheetContent>`;
+  }
   if (issue.element === "Select") {
     return `<SelectTrigger>
   {/* missing SelectValue */}
 </SelectTrigger>`;
+  }
+  if (issue.title.includes("asChild")) {
+    return `<DialogTrigger asChild>
+  <div>Open</div>
+</DialogTrigger>`;
   }
   return undefined;
 }
@@ -181,6 +376,7 @@ export function buildSuggestedFixes(
         problem: issue.title,
         whyItMatters: whyFor(issue),
         suggestion: issue.suggestion,
+        adaptNote: ADAPT_NOTE,
         description: issue.suggestion,
         before: beforeFromIssue(issue, primary),
         after: issue.fixSnippet,
@@ -203,11 +399,12 @@ export function buildSuggestedFixes(
         problem: issue.title,
         whyItMatters: whyFor(issue),
         suggestion: issue.suggestion,
+        adaptNote: ADAPT_NOTE,
         description: issue.suggestion,
         before: beforeFromIssue(issue, primary),
         after:
           issue.fixSnippet ??
-          `// ${issue.suggestion}\n// Flagged on: ${issue.element ?? primary}`,
+          `// ${issue.suggestion}\n// Flagged on: ${issue.element ?? primary}\n// Signal: ${issue.evidence}`,
         language: "tsx",
       });
     }

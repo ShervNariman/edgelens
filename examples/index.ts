@@ -182,6 +182,107 @@ export function ThemeSelect({ themes }: { themes: string[] }) {
   )
 }`,
   },
+  {
+    id: "team-invite",
+    label: "Team invite · founder demo",
+    description:
+      "Production-looking invite card — missing async/error/empty states + Sheet title gap",
+    reveals:
+      "Happy-path invite UI hides loading/disabled/error/empty gaps; Sheet missing SheetTitle; duplicate-submit risk.",
+    code: `import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select"
+
+const ROLES = ["Admin", "Member", "Billing"]
+
+/**
+ * Looks launch-ready on the happy path: branded card, role select, primary CTA.
+ * EdgeLens should surface missing invite states + SheetTitle composition gap.
+ */
+export function TeamInviteCard({
+  members,
+  onInvite,
+}: {
+  members: { id: string; email: string; role: string }[]
+  onInvite: (email: string, role: string) => Promise<void>
+}) {
+  return (
+    <Card className="w-full max-w-lg">
+      <CardHeader>
+        <CardTitle>Invite your team</CardTitle>
+        <CardDescription>
+          Add teammates so they can review launches with you.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex gap-2">
+          <Input type="email" placeholder="alex@startup.com" />
+          <Select>
+            <SelectTrigger className="w-[140px]">
+              {/* missing SelectValue */}
+            </SelectTrigger>
+            <SelectContent>
+              {ROLES.map((role) => (
+                <SelectItem value={role}>{role}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            className="bg-blue-600 text-white"
+            onClick={() => onInvite("alex@startup.com", "Member")}
+          >
+            Send invite
+          </Button>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Pending members</p>
+          {members.map((member) => (
+            <div className="flex items-center justify-between text-sm">
+              <span>{member.email}</span>
+              <span className="text-muted-foreground">{member.role}</span>
+            </div>
+          ))}
+        </div>
+
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="w-full">
+              Manage seats
+            </Button>
+          </SheetTrigger>
+          <SheetContent>
+            {/* missing SheetTitle / SheetDescription */}
+            <p className="text-sm text-muted-foreground">
+              Seat management will appear here.
+            </p>
+            <Button variant="destructive" className="mt-4">
+              Remove member
+            </Button>
+          </SheetContent>
+        </Sheet>
+      </CardContent>
+    </Card>
+  )
+}`,
+  },
 ];
 
 export function findExampleByCode(code: string): CodeExample | undefined {

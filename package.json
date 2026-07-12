@@ -8,7 +8,9 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
-    "audit:public": "node scripts/public-safety-scan.mjs"
+    "audit:public": "node scripts/public-safety-scan.mjs",
+    "test:rules": "npx tsx --test scripts/rule-corpus.test.mts",
+    "smoke:examples": "npx tsx scripts/smoke-examples.mts"
   },
   "dependencies": {
     "@babel/parser": "^8.0.4",

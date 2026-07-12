@@ -35,14 +35,14 @@ export const CHECK_LAYERS = {
     label: "State completeness",
     short: "States",
     blurb:
-      "Hero check: missing loading, empty, error, disabled, focus, hover, active, and selected-style states.",
+      "Hero check: missing loading, empty, error, disabled, focus, hover, active, selected, and success-style states.",
   },
   static: {
     id: "static",
     label: "Static JSX / shadcn",
     short: "Static",
     blurb:
-      "Source heuristics for icon-only names, Dialog title/description gaps, and suspicious Radix/shadcn composition.",
+      "Source heuristics for names, Dialog/Sheet title gaps, asChild risks, keys, and Radix/shadcn composition — each with a deterministic signal and confidence.",
   },
   preview: {
     id: "preview",
@@ -56,6 +56,6 @@ export const CHECK_LAYERS = {
     label: "Rule-based fixes",
     short: "Fixes",
     blurb:
-      "Deterministic before/after templates — review and apply manually in your editor.",
+      "Deterministic before/after templates — review, adapt imports/props, and apply manually in your editor.",
   },
 } as const;
