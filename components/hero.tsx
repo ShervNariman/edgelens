@@ -78,7 +78,7 @@ export function Hero({ onTryDemo, compact = false }: HeroProps) {
           <a
             href="#analyzer"
             className={cn(
-              "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground",
+              "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               compact ? "h-8" : "h-9"
             )}
           >

@@ -26,7 +26,10 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.error) {
       return (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-6 text-center">
+        <div
+          className="rounded-xl border border-destructive/40 bg-destructive/10 p-6 text-center"
+          role="alert"
+        >
           <p className="text-sm font-medium text-foreground">
             {this.props.fallbackTitle ?? "Something went wrong"}
           </p>

@@ -5,6 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { CODE_EXAMPLES, type CodeExample } from "@/examples";
 import { captureEvent } from "@/lib/analytics";
+import { ANALYZER_COPY } from "@/lib/product-copy";
+import {
+  formatSourceSize,
+  getSourceSizeStatus,
+  MAX_SOURCE_CHARS,
+  WARN_SOURCE_CHARS,
+} from "@/lib/source-limits";
 import { cn } from "@/lib/utils";
 import { Loader2, Sparkles } from "lucide-react";
 
@@ -17,6 +24,7 @@ interface CodeInputPanelProps {
   onSelectExample: (example: CodeExample) => void;
   /** Tighter layout for /record/edgelens capture frames. */
   compact?: boolean;
+  sourceHeadingId?: string;
 }
 
 export function CodeInputPanel({
@@ -27,25 +35,32 @@ export function CodeInputPanel({
   selectedExample,
   onSelectExample,
   compact = false,
+  sourceHeadingId = "analyzer-source-heading",
 }: CodeInputPanelProps) {
+  const sizeStatus = getSourceSizeStatus(code);
+  const overLimit = sizeStatus === "over";
+  const warnSize = sizeStatus === "warn";
+
   return (
     <div className={cn("flex h-full flex-col", compact ? "gap-2.5" : "gap-3")}>
       <div>
-        <h2 className="text-sm font-medium tracking-wide text-foreground">
-          Component source
-        </h2>
+        <h3
+          id={sourceHeadingId}
+          className="text-sm font-medium tracking-wide text-foreground"
+        >
+          {ANALYZER_COPY.sourceTitle}
+        </h3>
         <p className="mt-1 text-xs text-muted-foreground">
           {compact
-            ? "Preloaded launch demo — swap examples anytime."
-            : "Intentionally imperfect AI-style shadcn components — load one, then Analyze."}
+            ? ANALYZER_COPY.sourceHelpCompact
+            : ANALYZER_COPY.sourceHelp}
         </p>
       </div>
 
       <div
-        className={cn(
-          "grid gap-1.5",
-          compact ? "sm:grid-cols-1" : "sm:grid-cols-1"
-        )}
+        className="grid gap-1.5"
+        role="group"
+        aria-label="Demo examples"
       >
         {CODE_EXAMPLES.map((example) => {
           const active = selectedExample?.id === example.id;
@@ -53,6 +68,7 @@ export function CodeInputPanel({
             <button
               key={example.id}
               type="button"
+              aria-pressed={active}
               onClick={() => {
                 captureEvent("example_selected", { example_id: example.id });
                 onSelectExample(example);
@@ -70,8 +86,9 @@ export function CodeInputPanel({
                 <Sparkles
                   className={cn(
                     "h-3 w-3 shrink-0",
-                    active ? "text-emerald-400" : "text-muted-foreground"
+                    active ? "text-emerald-500" : "text-muted-foreground"
                   )}
+                  aria-hidden
                 />
                 {example.label}
               </span>
@@ -87,40 +104,82 @@ export function CodeInputPanel({
 
       {selectedExample && (
         <div
+          id="example-reveal-hint"
           className={cn(
             "rounded-lg border border-emerald-500/25 bg-emerald-500/8 text-xs leading-relaxed",
             compact ? "px-2.5 py-1.5" : "px-3 py-2"
           )}
         >
-          <p className="font-medium text-emerald-800 dark:text-emerald-200">
-            This example should reveal…
+          <p className="font-medium text-emerald-900">
+            {ANALYZER_COPY.exampleRevealLabel}
           </p>
           <p className="mt-0.5 text-muted-foreground">{selectedExample.reveals}</p>
           {!compact && (
-            <p className="mt-1.5 font-mono text-[10px] text-emerald-700/80 dark:text-emerald-300/80">
-              Click Analyze to generate the report
+            <p className="mt-1.5 font-mono text-[10px] text-emerald-800/80">
+              {ANALYZER_COPY.exampleAnalyzeHint}
             </p>
           )}
         </div>
       )}
 
       <div className="flex min-h-0 flex-1 flex-col gap-2">
-        <Label htmlFor="component-source" className="sr-only">
-          Component source code
-        </Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="component-source" className="sr-only">
+            Component source code
+          </Label>
+          <p
+            className={cn(
+              "font-mono text-[10px]",
+              overLimit
+                ? "text-destructive"
+                : warnSize
+                  ? "text-amber-700"
+                  : "text-muted-foreground"
+            )}
+            aria-live="polite"
+          >
+            {formatSourceSize(code.length)}
+            {overLimit
+              ? ` · max ${formatSourceSize(MAX_SOURCE_CHARS)}`
+              : warnSize
+                ? ` · soft limit ${formatSourceSize(WARN_SOURCE_CHARS)}`
+                : ""}
+          </p>
+        </div>
         <Textarea
           id="component-source"
           value={code}
           onChange={(e) => onChange(e.target.value)}
           spellCheck={false}
+          aria-invalid={overLimit || undefined}
+          aria-describedby={
+            overLimit || warnSize
+              ? "source-size-message"
+              : selectedExample
+                ? "example-reveal-hint"
+                : undefined
+          }
           placeholder={`// Paste a React / shadcn component…\nexport function Example() {\n  return <Button>Click</Button>\n}`}
           className={cn(
             "ph-no-capture flex-1 resize-y font-mono text-xs leading-relaxed",
             compact
               ? "min-h-[160px] lg:min-h-[min(28vh,260px)]"
-              : "min-h-[220px] lg:min-h-[min(42vh,380px)]"
+              : "min-h-[220px] lg:min-h-[min(42vh,380px)]",
+            overLimit && "border-destructive/50"
           )}
         />
+        {(overLimit || warnSize) && (
+          <p
+            id="source-size-message"
+            className={cn(
+              "text-xs",
+              overLimit ? "text-destructive" : "text-amber-800"
+            )}
+            role={overLimit ? "alert" : undefined}
+          >
+            {overLimit ? ANALYZER_COPY.sourceOverLimit : ANALYZER_COPY.sourceWarn}
+          </p>
+        )}
       </div>
 
       <Button
@@ -133,16 +192,16 @@ export function CodeInputPanel({
           });
           onAnalyze();
         }}
-        disabled={isAnalyzing || !code.trim()}
+        disabled={isAnalyzing || !code.trim() || overLimit}
       >
         {isAnalyzing ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
             Analyzing…
           </>
         ) : (
           <>
-            <Sparkles className="h-4 w-4" />
+            <Sparkles className="h-4 w-4" aria-hidden />
             Analyze
           </>
         )}

@@ -10,9 +10,10 @@ export function SiteFooter() {
             Built by{" "}
             <a
               href="https://nariman.dev"
-              className="underline-offset-4 hover:text-foreground hover:underline"
+              className="underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               target="_blank"
               rel="noreferrer"
+              aria-label="Sherv Nariman on nariman.dev (opens in new tab)"
             >
               Sherv Nariman
             </a>
@@ -21,30 +22,36 @@ export function SiteFooter() {
           </p>
         </div>
 
-        <nav className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+        <nav
+          aria-label="External links"
+          className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground"
+        >
           <a
-            href="https://github.com/placeholder/edgelens"
-            className="inline-flex items-center gap-1.5 hover:text-foreground"
+            href="https://github.com/ShervNariman/edgelens"
+            className="inline-flex items-center gap-1.5 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             target="_blank"
             rel="noreferrer"
+            aria-label="EdgeLens on GitHub (opens in new tab)"
           >
-            <Code2 className="h-3.5 w-3.5" />
+            <Code2 className="h-3.5 w-3.5" aria-hidden />
             GitHub
           </a>
           <a
             href="https://x.com/ShervNariman"
-            className="inline-flex items-center gap-1.5 hover:text-foreground"
+            className="inline-flex items-center gap-1.5 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             target="_blank"
             rel="noreferrer"
+            aria-label="@ShervNariman on X (opens in new tab)"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden />
             @ShervNariman
           </a>
           <a
             href="https://nariman.dev"
-            className="hover:text-foreground"
+            className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             target="_blank"
             rel="noreferrer"
+            aria-label="nariman.dev (opens in new tab)"
           >
             nariman.dev
           </a>

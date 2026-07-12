@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Geist_Mono, IBM_Plex_Sans } from "next/font/google";
 import { PostHogAnalytics } from "@/components/analytics/posthog-analytics";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { META_DESCRIPTION, META_TITLE } from "@/lib/product-copy";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -22,9 +18,8 @@ const plexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "EdgeLens — Pre-flight for React/shadcn UI states",
-  description:
-    "Local deterministic pre-flight checker for generated React/shadcn UI. Catch missing loading, empty, error, disabled, and focus states — plus common shadcn/Radix accessibility gotchas — before components ship.",
+  title: META_TITLE,
+  description: META_DESCRIPTION,
 };
 
 export default function RootLayout({
@@ -35,8 +30,14 @@ export default function RootLayout({
   return (
     <html lang="en" className="light" suppressHydrationWarning>
       <body
-        className={`${plexSans.variable} ${geistSans.variable} ${geistMono.variable} min-h-screen font-sans antialiased`}
+        className={`${plexSans.variable} ${geistMono.variable} min-h-screen font-sans antialiased`}
       >
+        <a
+          href="#analyzer"
+          className="absolute left-4 top-4 z-50 -translate-y-16 rounded-md bg-background px-3 py-2 text-sm shadow ring-2 ring-ring transition-transform focus:translate-y-0"
+        >
+          Skip to analyzer
+        </a>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

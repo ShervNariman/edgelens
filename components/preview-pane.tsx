@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type {
   AnalysisIssue,
   AxeViolation,
@@ -20,7 +20,9 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { captureEvent } from "@/lib/analytics";
 import { runAxeOnElement } from "@/lib/axe-runner";
+import { ANALYZER_COPY, PREVIEW_STATE_GUIDANCE } from "@/lib/product-copy";
 import { buildPreviewMeta, type PreviewMeta } from "@/lib/preview-meta";
 import { cn } from "@/lib/utils";
 import {
@@ -46,18 +48,6 @@ const SIMULATABLE: ComponentState[] = [
   "empty",
 ];
 
-/** Short, helpful copy when simulating a state not found in source. */
-const STATE_GUIDANCE: Record<ComponentState, string> = {
-  default: "Baseline appearance when no interaction is applied.",
-  hover: "Add hover: utilities or rely on shadcn primitive hover styles.",
-  focus: "Add focus-visible:ring styles for keyboard users.",
-  active: "Use active: or data-[state=active] for pressed/selected feedback.",
-  disabled: "Support a disabled prop with muted opacity and pointer-events-none.",
-  loading: "Expose isLoading — disable the control and show a spinner.",
-  error: "Surface validation/failure with aria-invalid or a destructive Alert.",
-  empty: "Guard empty collections with a placeholder before mapping items.",
-};
-
 interface PreviewPaneProps {
   code: string;
   componentName: string | null;
@@ -68,6 +58,8 @@ interface PreviewPaneProps {
   onForceState: (state: ComponentState) => void;
   onAxeResults?: (violations: AxeViolation[]) => void;
   runAxe?: boolean;
+  pendingAxe?: boolean;
+  headingId?: string;
 }
 
 export function PreviewPane({
@@ -80,43 +72,54 @@ export function PreviewPane({
   onForceState,
   onAxeResults,
   runAxe = false,
+  pendingAxe = false,
+  headingId = "analyzer-preview-heading",
 }: PreviewPaneProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const hasCode = Boolean(code.trim());
 
-  let meta: PreviewMeta;
-  try {
-    meta = buildPreviewMeta(
-      code,
-      componentName,
-      detectedComponents.length
-        ? detectedComponents
-        : primaryType !== "Unknown"
-          ? [{ name: primaryType, type: primaryType, props: [], hasChildren: true }]
-          : [],
-      issues
-    );
-    if (primaryType !== "Unknown") {
-      meta = { ...meta, primaryType };
+  const meta = useMemo(() => {
+    try {
+      let next = buildPreviewMeta(
+        code,
+        componentName,
+        detectedComponents.length
+          ? detectedComponents
+          : primaryType !== "Unknown"
+            ? [
+                {
+                  name: primaryType,
+                  type: primaryType,
+                  props: [],
+                  hasChildren: true,
+                },
+              ]
+            : [],
+        issues
+      );
+      if (primaryType !== "Unknown") {
+        next = { ...next, primaryType };
+      }
+      return next;
+    } catch (err) {
+      console.error("[EdgeLens] preview meta failed", err);
+      return {
+        componentName,
+        primaryType: (primaryType !== "Unknown" ? primaryType : "Button") as DetectedComponentType,
+        label: "Action",
+        buttonVariant: "default" as const,
+        buttonSize: "default" as const,
+        isIconOnly: false,
+        hasLoadingProp: false,
+        placeholder: "Select an option",
+        title: componentName ?? "Component preview",
+        description: "Simulated preview — force the states AI often skips.",
+        missingStates: [] as ComponentState[],
+        a11yIssues: [] as string[],
+        detectedNames: detectedComponents.map((c) => c.name),
+      } satisfies PreviewMeta;
     }
-  } catch (err) {
-    console.error("[EdgeLens] preview meta failed", err);
-    meta = {
-      componentName,
-      primaryType: primaryType !== "Unknown" ? primaryType : "Button",
-      label: "Action",
-      buttonVariant: "default",
-      buttonSize: "default",
-      isIconOnly: false,
-      hasLoadingProp: false,
-      placeholder: "Select an option",
-      title: componentName ?? "Component preview",
-      description: "Simulated preview — force the states AI often skips.",
-      missingStates: [],
-      a11yIssues: [],
-      detectedNames: detectedComponents.map((c) => c.name),
-    };
-  }
+  }, [code, componentName, detectedComponents, issues, primaryType]);
 
   useEffect(() => {
     if (!runAxe || !previewRef.current || !onAxeResults) return;
@@ -157,9 +160,12 @@ export function PreviewPane({
     <div className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card/30 p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Forced state preview
-          </p>
+          <h3
+            id={headingId}
+            className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
+          >
+            {ANALYZER_COPY.previewTitle}
+          </h3>
           <p className="truncate font-mono text-sm text-foreground">
             {meta.componentName ?? "AnonymousComponent"}
             <span className="text-muted-foreground"> · </span>
@@ -169,17 +175,29 @@ export function PreviewPane({
             {currentNotImplemented ? (
               <span className="text-muted-foreground">
                 {" "}
-                · <span className="text-sky-600 dark:text-sky-400">not in source</span>
+                · <span className="text-sky-700">not in source</span>
               </span>
             ) : (
               <span className="text-muted-foreground">
                 {" "}
-                · <span className="text-emerald-700 dark:text-emerald-400">detected</span>
+                · <span className="text-emerald-700">detected</span>
               </span>
             )}
           </p>
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            {ANALYZER_COPY.previewSimulated}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
+          {pendingAxe && (
+            <Badge
+              variant="outline"
+              className="border-violet-500/30 bg-violet-500/10 font-mono text-[10px] text-violet-900"
+              aria-busy="true"
+            >
+              preview checks…
+            </Badge>
+          )}
           {meta.a11yIssues.length > 0 && (
             <Badge variant="destructive" className="font-mono text-[10px]">
               {meta.a11yIssues.length} a11y
@@ -188,7 +206,7 @@ export function PreviewPane({
           {gapCount > 0 && (
             <Badge
               variant="outline"
-              className="border-sky-500/30 bg-sky-500/10 font-mono text-[10px] text-sky-800 dark:text-sky-200"
+              className="border-sky-500/30 bg-sky-500/10 font-mono text-[10px] text-sky-900"
             >
               {gapCount} not implemented
             </Badge>
@@ -211,7 +229,11 @@ export function PreviewPane({
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Force preview state">
+        <div
+          className="flex flex-wrap gap-1.5"
+          role="toolbar"
+          aria-label="Force preview state"
+        >
           {SIMULATABLE.map((state) => {
             const isGap = notImplemented.has(state);
             const isSelected = forcedState === state;
@@ -219,7 +241,10 @@ export function PreviewPane({
               <button
                 key={state}
                 type="button"
-                onClick={() => onForceState(state)}
+                onClick={() => {
+                  captureEvent("state_forced", { state });
+                  onForceState(state);
+                }}
                 aria-pressed={isSelected}
                 title={
                   isGap
@@ -227,21 +252,19 @@ export function PreviewPane({
                     : `${state} — found in source`
                 }
                 className={cn(
-                  "inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 font-mono text-[11px] font-medium transition-all duration-200",
+                  "inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 font-mono text-[11px] font-medium transition-all duration-200 motion-reduce:transition-none",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                  // Selected
                   isSelected &&
-                    "border-foreground/20 bg-foreground text-background shadow-sm scale-[1.03]",
-                  // Present in source, not selected
+                    "scale-[1.03] border-foreground/20 bg-foreground text-background shadow-sm motion-reduce:scale-100",
                   !isSelected &&
                     !isGap &&
-                    "border-border bg-background text-foreground hover:bg-muted hover:border-foreground/20",
-                  // Not in source, not selected — soft sky outline, high contrast text
+                    "border-border bg-background text-foreground hover:border-foreground/20 hover:bg-muted",
                   !isSelected &&
                     isGap &&
-                    "border-sky-600/35 bg-sky-500/10 text-sky-950 dark:border-sky-400/40 dark:bg-sky-500/15 dark:text-sky-100 hover:bg-sky-500/20",
-                  // Selected + gap — keep selected look, add subtle sky ring
-                  isSelected && isGap && "ring-2 ring-sky-500/35 ring-offset-1 ring-offset-background"
+                    "border-sky-600/35 bg-sky-500/10 text-sky-950 hover:bg-sky-500/20",
+                  isSelected &&
+                    isGap &&
+                    "ring-2 ring-sky-500/35 ring-offset-1 ring-offset-background"
                 )}
               >
                 <span
@@ -250,7 +273,9 @@ export function PreviewPane({
                     isSelected && !isGap && "bg-emerald-400",
                     isSelected && isGap && "bg-sky-300",
                     !isSelected && !isGap && "bg-emerald-500",
-                    !isSelected && isGap && "border border-sky-600/70 bg-transparent dark:border-sky-300/80"
+                    !isSelected &&
+                      isGap &&
+                      "border border-sky-600/70 bg-transparent"
                   )}
                   aria-hidden
                 />
@@ -262,14 +287,14 @@ export function PreviewPane({
       </div>
 
       {currentNotImplemented && hasCode && (
-        <div className="rounded-lg border border-sky-500/25 bg-sky-500/8 px-3 py-2 text-xs text-foreground/90 dark:bg-sky-500/10">
+        <div className="rounded-lg border border-sky-500/25 bg-sky-500/8 px-3 py-2 text-xs text-foreground/90">
           <p>
-            <span className="font-medium text-sky-900 dark:text-sky-100">
+            <span className="font-medium text-sky-950">
               Simulating {forcedState}
             </span>
             <span className="text-muted-foreground">
               {" "}
-              — not in source. {STATE_GUIDANCE[forcedState]}
+              — not in source. {PREVIEW_STATE_GUIDANCE[forcedState]}
             </span>
           </p>
         </div>
@@ -278,8 +303,8 @@ export function PreviewPane({
       <div
         ref={previewRef}
         className={cn(
-          "relative flex min-h-[260px] flex-col overflow-hidden rounded-lg border border-dashed p-4 transition-all duration-300 sm:p-6",
-          "bg-[linear-gradient(180deg,oklch(0.97_0_0),oklch(0.94_0_0))] dark:bg-[linear-gradient(180deg,oklch(0.18_0_0),oklch(0.14_0_0))]",
+          "relative flex min-h-[280px] flex-col overflow-hidden rounded-lg border border-dashed p-4 transition-all duration-300 motion-reduce:transition-none sm:min-h-[300px] sm:p-6",
+          "bg-[linear-gradient(180deg,oklch(0.97_0_0),oklch(0.94_0_0))]",
           meta.a11yIssues.length > 0 && "ring-1 ring-destructive/35",
           currentNotImplemented && "border-sky-500/35",
           forcedState === "error" && "border-destructive/40",
@@ -294,7 +319,7 @@ export function PreviewPane({
             {meta.a11yIssues.slice(0, 2).map((issue) => (
               <span
                 key={issue}
-                className="max-w-full rounded-md border border-destructive/40 bg-destructive/15 px-2 py-1 font-mono text-[10px] leading-snug break-words text-destructive dark:text-red-100"
+                className="max-w-full rounded-md border border-destructive/40 bg-destructive/15 px-2 py-1 font-mono text-[10px] leading-snug break-words text-destructive"
               >
                 {issue}
               </span>
@@ -310,10 +335,9 @@ export function PreviewPane({
           ) : (
             <div
               key={`${meta.primaryType}-${forcedState}`}
-              className="w-full max-w-sm transition-all duration-300 ease-out"
-              style={{
-                animation: "edgelens-preview-in 220ms ease-out",
-              }}
+              className="edgelens-preview-animate w-full max-w-sm"
+              // Simulated canvas: keep axe targetable, keep product keyboard order clean.
+              inert={true}
             >
               <ComponentPreview meta={meta} state={forcedState} />
             </div>
@@ -322,7 +346,8 @@ export function PreviewPane({
       </div>
 
       <p className="text-center text-[10px] text-muted-foreground">
-        Previewing <span className="font-mono text-foreground/80">{forcedState}</span>
+        Previewing{" "}
+        <span className="font-mono text-foreground/80">{forcedState}</span>
       </p>
 
       {meta.detectedNames.length > 0 && (
@@ -815,7 +840,8 @@ function DialogPreview({
           isError && "border-destructive/50",
           isDisabled && "opacity-50"
         )}
-        role="dialog"
+        role="region"
+        aria-label="Simulated dialog preview"
         aria-labelledby="preview-dialog-title"
       >
         <div className="space-y-1">
